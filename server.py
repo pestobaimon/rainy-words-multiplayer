@@ -1,14 +1,16 @@
-from timer import Timer
-from word_library import word_set
-from queue import *
-from words_server import Word
+import random
 import socket
 import threading
-import pygame
-import random
+from queue import *
 
+import pygame
+
+from timer import Timer
+from word_library import word_set
+from words_server import Word
 
 thread_event = threading.Event()
+
 
 class Player:
     def __init__(self, name, player_id):
@@ -20,7 +22,6 @@ class Player:
 
 
 class Server:
-
     HEADER = 64
     PORT = 5050
     SERVER = "25.40.56.186"
@@ -41,6 +42,7 @@ class Server:
         self.word_count = 0
         self.game_state = 0
         self.countdown = ''
+
     """
     frameData format
       client_id,score | client_id,score : word_id,word_code,fall_speed,x_pos,y_pos | word_id,word_code,fall_speed,x_pos,y_pos | ,....
@@ -48,6 +50,7 @@ class Server:
       [client_id, status, word_submit]
     
     """
+
     def handle_client(self, conn, addr, client_id, recv_q, clock):
         conn.send(str.encode(str(client_id)))
 
@@ -63,7 +66,6 @@ class Server:
                     conn.send(str.encode("Receiving data empty. Disconnecting"))
                     break
                 else:
-                    # print("Recieved: " + reply)
                     client_data_arr = reply.split(",")
                     rcv_id = int(client_data_arr[0])
                     status = int(client_data_arr[1])
@@ -103,7 +105,8 @@ class Server:
             conn, addr = self.server.accept()
             self.client_queues[client_id] = Queue()
             self.players[client_id] = Player(str(client_id), client_id)
-            thread = threading.Thread(target=self.handle_client, args=(conn, addr, client_id, self.client_queues[client_id], clock))
+            thread = threading.Thread(target=self.handle_client,
+                                      args=(conn, addr, client_id, self.client_queues[client_id], clock))
             thread.start()
             print(f"[ACTIVE CONNECTIONS] {threading.activeCount() - 1}")
             client_id += 1
@@ -143,7 +146,6 @@ class Server:
                 timer.tick()
             if timer.time >= 90:
                 timer.reset()
-
 
             if len(word_mem) <= 1:
                 timer.tick()
@@ -185,13 +187,13 @@ class Server:
                 self.frame_string += client_string
             self.frame_string = self.frame_string[:-1] + ":"
             for word in word_mem:
-                word_string = str(word.id) + "," + str(word.word_code) + "," + str(word.fall_speed) + "," + str(word.text_rect.topleft[0]) + "," + str(word.text_rect.topleft[1]) + "|"
+                word_string = str(word.id) + "," + str(word.word_code) + "," + str(word.fall_speed) + "," + str(
+                    word.text_rect.topleft[0]) + "," + str(word.text_rect.topleft[1]) + "|"
                 self.frame_string += word_string
             self.frame_string = self.frame_string[:-1]
             # print(self.frame_string)
             thread_event.set()
             thread_event.clear()
-
 
     @staticmethod
     def move_word(w):

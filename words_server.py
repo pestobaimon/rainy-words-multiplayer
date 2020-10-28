@@ -17,7 +17,7 @@ class Word:
         self.matching_text_rect = self.matching_text.get_rect()
         self.text = self.font.render(self.word, True, pygame.Color('black'))
         self.text_rect = self.text.get_rect()
-        self.text_rect.topleft = (self.x_offset, 0)
+        self.text_rect.topleft = (self.x_offset, -50)
         self.disabled = False
         self.id = word_id
 

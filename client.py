@@ -79,7 +79,7 @@ class Game:
                     pygame.quit()
                     quit()
                 elif event.type == pygame.KEYDOWN:
-                    if event.unicode != '\r' and event.unicode != '\b' and event.unicode.isalpha():
+                    if event.unicode.isalpha() or event.unicode == '-':
                         self.player_me.keystrokes += event.unicode
                     elif event.unicode == '\r':
                         self.player_me.confirm_key = True
