@@ -24,7 +24,7 @@ class Player:
 class Server:
     HEADER = 64
     PORT = 5050
-    SERVER = "25.40.56.186"
+    SERVER =  "10.35.189.191"  #192.168.1.40"
     ADDR = (SERVER, PORT)
     FORMAT = 'utf-8'
     DISCONNECT_MESSAGE = "!DISCONNECT"
@@ -45,7 +45,7 @@ class Server:
 
     """
     frameData format
-      client_id,score | client_id,score : word_id,word_code,fall_speed,x_pos,y_pos | word_id,word_code,fall_speed,x_pos,y_pos | ,....
+      my_id, my_name ,score | op_id, op_name ,score | countdown | all_conn : word_id,word_code,fall_speed,x_pos,y_pos | word_id,word_code,fall_speed,x_pos,y_pos | ,....
     clientData format
       [client_id, status, word_submit]
     
@@ -66,7 +66,7 @@ class Server:
                     conn.send(str.encode("Receiving data empty. Disconnecting"))
                     break
                 else:
-                    client_data_arr = reply.split(",")
+                    client_data_arr = reply.split(",")  #เป็น list ที่เก็บ data เป็นประเภทๆตาม index (รับมาจาก client)
                     rcv_id = int(client_data_arr[0])
                     status = int(client_data_arr[1])
                     word_submit = str(client_data_arr[2])
@@ -93,6 +93,8 @@ class Server:
             except:
                 break
 
+
+
     def start(self):
         self.server.listen()
         print(f"[LISTENING] Server is listening on {self.SERVER}")
@@ -110,7 +112,7 @@ class Server:
             thread.start()
             print(f"[ACTIVE CONNECTIONS] {threading.activeCount() - 1}")
             client_id += 1
-            if threading.activeCount() - 1 == 2:
+            if threading.activeCount() - 1 == 2: #เมื่อครบ 2 connections เมื่อไหร่ให้เริ่ม state1
                 self.game_state = 1
 
         start_ticks = pygame.time.get_ticks()
@@ -125,10 +127,10 @@ class Server:
                 self.countdown = "1"
             else:
                 self.game_state = 2
-            thread_event.set()
-            thread_event.clear()
+            thread_event.set()   #thread ที่ wait อยู่ ให้ internal flag เป็น true
+            thread_event.clear()   #set internal flag to false
 
-        word_mem = []
+        word_mem = []   #คำบนหน้าจอ
 
         timer = Timer()
         while self.game_state == 2:
@@ -142,7 +144,7 @@ class Server:
                 except Empty as e:
                     pass
 
-            if len(word_mem) <= 1:
+            if len(word_mem) <= 1:    #ถ้าไม่มีคำบนหน้าจอให้จับเวลา
                 timer.tick()
             if timer.time >= 90:
                 timer.reset()
@@ -157,22 +159,22 @@ class Server:
 
             removed_words = []
 
-            for word in word_mem:
-                if not word.disabled:
+            for word in word_mem:  #iterate all the word on the screen to find which word that the user type
+                if not word.disabled: #if the word is not out of screen
                     self.move_word(word)
                     if word.text_rect.bottomleft[1] > 800:
-                        word.disable()
-                        removed_words.append(word)
+                        word.disable()    #the word is out of screen
+                        removed_words.append(word)   #append in removed word
 
                     for client_id in self.players:
                         if self.players[client_id].word_submit != " ":
-                            if (self.players[client_id].word_submit == word.word) and (not word.disabled):
+                            if (self.players[client_id].word_submit == word.word) and (not word.disabled):  #if the typing is correct plus the score
                                 self.players[client_id].score += 1
                                 print('plus')
-                                word.disable()
+                                word.disable()     #already corrected then move to disable word
                                 removed_words.append(word)
                             else:
-                                print(self.players[client_id].word_submit + "!=" + word.word)
+                                print(self.players[client_id].word_submit + "!=" + word.word)  #not the word that the user type
                 else:
                     removed_words.append(word)
 
@@ -182,17 +184,18 @@ class Server:
             if len(removed_words) > 0:
                 word_mem = [i for i in word_mem if i not in removed_words]
 
-            for key in self.players:
-                client_string = str(key) + "," + str(self.players[key].score) + "|"
-                self.frame_string += client_string
+            for key in self.players: #create frame data ( id of client and client score
+                client_string = str(key) + "," + str(self.players[key].name)+ str(self.players[key].score) + "|"
+                
+                self.frame_string += client_string   #add to frame string
             self.frame_string = self.frame_string[:-1] + ":"
-            for word in word_mem:
+            for word in word_mem:  #add all word on the screen also its fall speed and its rect
                 word_string = str(word.id) + "," + str(word.word_code) + "," + str(word.fall_speed) + "," + str(
                     word.text_rect.topleft[0]) + "," + str(word.text_rect.topleft[1]) + "|"
-                self.frame_string += word_string
+                self.frame_string += word_string   #add to the string
             self.frame_string = self.frame_string[:-1]
             # print(self.frame_string)
-            thread_event.set()
+            thread_event.set()    #1 event occurs for 1/30 sec
             thread_event.clear()
 
     @staticmethod
