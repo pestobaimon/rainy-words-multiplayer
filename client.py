@@ -17,21 +17,26 @@ class Game:
         # game user
         pygame.init()
         self.net = Network()
-        self.player_me = Player('Mon', self.net.id)
+        self.player_me = Player('Katsu', self.net.id)
+        self.player_friend = Player('Mon', self.net.id)
         self.player_dict = {self.player_me.id: self.player_me}
 
         # game interface
         self.width = 1024
         self.height = 720
-        self.font = pygame.font.Font('freesansbold.ttf', 32)
+        self.font = pygame.font.Font('Assets/font/pixelmix.ttf', 32)
         self.player_bongo_me = bongo_sprite
         self.player_bongo_friend = bongo_sprite
         self.player_x_me = 50
         self.player_y_me = 420
-        self.player_x_friend = 0
-        self.player_y_friend = 0
+        self.player_x_friend = 670
+        self.player_y_friend = 420
+        # display client -> server
         self.draw_state_me = 0
         self.draw_state_friend = 0
+
+        # display client
+        self.draw_index = 0
         self.screen = pygame.display.set_mode((self.width, self.height))
         pygame.display.set_caption('client1')
 
@@ -115,7 +120,6 @@ class Game:
             framerate = self.clock.tick(30)
             backspace_clock.tick()
             keys = pygame.key.get_pressed()
-            self.draw_state_me = 0
 
             player_dict, word_dict = self.parse_data(self.current_frame_string)
             self.sync_data(player_dict, word_dict)
@@ -125,8 +129,9 @@ class Game:
             self.screen.fill(pygame.Color('white'))
             self.screen.blit(pygame.transform.scale(bg_sprite[0], (self.width, self.height)), (0, 0))
             self.screen.blit(pygame.transform.rotate(pygame.transform.scale(bg_sprite[1], (200, 100)), 2), (70, 570))
-            self.draw_score(self.player_me.score)
-            self.draw_current_stroke(self.player_me.keystrokes)
+            self.screen.blit(
+                pygame.transform.flip(pygame.transform.rotate(pygame.transform.scale(bg_sprite[1], (200, 100)), 2),
+                                      True, False), (750, 570))
 
             if keys[pygame.K_BACKSPACE] and len(self.player_me.keystrokes) > 0 and backspace_clock.time >= 2:
                 backspace_clock.reset()
@@ -141,6 +146,18 @@ class Game:
                         self.player_me.keystrokes += event.unicode
                     elif event.unicode == '\r' or event.key == pygame.K_RETURN:
                         self.player_me.confirm_key = True
+
+            if self.draw_state_me == 0:
+                self.draw_bongo_cat(self.player_bongo_me[self.draw_state_friend], 0)
+
+            self.draw_bongo_cat(self.player_bongo_friend[self.draw_state_friend], 1)
+            self.screen.blit(pygame.transform.rotate(pygame.transform.scale(addi_sprite[0], (100, 75)), -1), (180, 485))
+            self.screen.blit(pygame.transform.rotate(pygame.transform.scale(addi_sprite[1], (110, 80)), 23), (744, 470))
+            self.draw_name_me(self.player_me.name)
+            self.draw_score_me(self.player_me.score)
+            self.draw_name_friend(self.player_friend.name)
+            self.draw_score_friend(self.player_friend.score)
+            self.draw_current_stroke(self.player_me.keystrokes)
 
             for word_id in self.word_mem:
                 if self.player_me.keystrokes == '':
@@ -167,8 +184,7 @@ class Game:
                 self.player_me.confirm_key = False
             else:
                 self.current_frame_string = self.send_data('')
-            if self.draw_state_me == 0:
-                self.draw_bongo_cat(self.player_bongo_me[0], 0)
+
             pygame.display.update()
 
     def send_data(self, key_strokes):
@@ -220,16 +236,21 @@ class Game:
         if user == 0:  # draw me
             self.screen.blit(pygame.transform.scale(png, (300, 300)), (self.player_x_me, self.player_y_me))
         if user == 1:  # draw friend
-            self.screen.blit(pygame.transform.scale(png, (300, 300)), (self.player_x_friend, self.player_y_friend))
+            self.screen.blit(pygame.transform.flip(pygame.transform.scale(png, (300, 300)), True, False), (self.player_x_friend, self.player_y_friend))
 
     def bongo_animation(self, bongo_state, event):  # bongo state which folder (me or friend)
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_SPACE:
-                self.draw_bongo_cat(bongo_state[2], 0)
                 self.draw_state_me = 2
+                self.draw_bongo_cat(bongo_state[self.draw_state_me], 0)
             else:
-                self.draw_bongo_cat(bongo_state[1], 0)
-                self.draw_state_me = 1
+                if self.draw_index % 2 == 0:
+                    self.draw_state_me = 4
+                    self.draw_bongo_cat(bongo_state[self.draw_state_me], 0)
+                if self.draw_index % 2 == 1:
+                    self.draw_state_me = 6
+                    self.draw_bongo_cat(bongo_state[self.draw_state_me], 0)
+                self.draw_index += 1
 
     def draw_text(self, text, xpos, ypos, font_size, r, g, b):
         font = pygame.font.Font('freesansbold.ttf', font_size)
@@ -244,10 +265,28 @@ class Game:
         time_text_rect.topright = (1010, 10)
         self.screen.blit(time_text, time_text_rect)
 
-    def draw_score(self, score):
-        score_text = self.font.render('score:' + str(score), True, pygame.Color('black'))
+    def draw_name_me(self, name):
+        name_text = self.font.render('MEOW ' + name, True, pygame.Color('black'))
+        name_text_rect = name_text.get_rect()
+        name_text_rect.topleft = (10, 10)
+        self.screen.blit(name_text, name_text_rect)
+
+    def draw_name_friend(self, name):
+        name_text = self.font.render('MEOW ' + name, True, pygame.Color('black'))
+        name_text_rect = name_text.get_rect()
+        name_text_rect.topright = (1014, 10)
+        self.screen.blit(name_text, name_text_rect)
+
+    def draw_score_me(self, score):
+        score_text = self.font.render('SCORE: ' + str(score), True, pygame.Color('black'))
         score_text_rect = score_text.get_rect()
-        score_text_rect.topleft = (0, 0)
+        score_text_rect.topleft = (10, 50)
+        self.screen.blit(score_text, score_text_rect)
+
+    def draw_score_friend(self, score):
+        score_text = self.font.render('SCORE: ' + str(score), True, pygame.Color('black'))
+        score_text_rect = score_text.get_rect()
+        score_text_rect.topright = (1014, 50)
         self.screen.blit(score_text, score_text_rect)
 
     def draw_current_stroke(self, current_stroke):
@@ -264,8 +303,10 @@ class Game:
         self.screen.blit(text, text_rect)
 
     def draw_countdown_timer(self, time):
-        font = pygame.font.Font('freesansbold.ttf', 50)
+        font = pygame.font.Font('Assets/font/pixelmix.ttf', 50)
         text = font.render('Game Starting In:' + time, True, pygame.Color('black'))
+        if time == '1':
+            text = font.render('Game Starting In:' + time + '!', True, pygame.Color('black'))
         text_rect = text.get_rect()
         text_rect.center = (int(self.width / 2), int(self.height / 2))
         self.screen.blit(text, text_rect)

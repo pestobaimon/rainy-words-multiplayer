@@ -16,3 +16,8 @@ bg_sprite = [
     pygame.image.load('Assets/bg/keyboard.png'),
     pygame.image.load('Assets/bg/lobby.jpg')
 ]
+
+addi_sprite = [
+    pygame.image.load('Assets/addi/santahat.png'),
+    pygame.image.load('Assets/addi/tophat.png')
+]
