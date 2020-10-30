@@ -28,21 +28,13 @@ class Game:
         self.clock = pygame.time.Clock()
         self.game_state = 0
 
-    def wait_conn(self):
-        pass
-
-    def wait_reply(self):
-        pass
-
     def run_lobby(self):
         while self.game_state == 0:
             framerate = self.clock.tick(30)
-            data = self.send_data('').split(',') #recv data from server
+            data = self.send_data('').split(',')
             self.game_state = int(data[0])
             self.screen.fill(pygame.Color('white'))
-            self.draw_Enter_Name()
-            self.draw_Input_Name()
-            #self.draw_connected_player_count(data[1])
+            self.draw_connected_player_count(data[1])
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
@@ -100,7 +92,7 @@ class Game:
                 if self.player_me.keystrokes == '':
                     s = False
                 else:
-                    s = re.search("^" + self.player_me.keystrokes, self.word_mem[word_id].word)  #match the start of the string
+                    s = re.search("^" + self.player_me.keystrokes, self.word_mem[word_id].word)
                 if s:
                     self.word_mem[word_id].match_text(s.span())
                     self.word_mem[word_id].start_match = True
@@ -123,7 +115,7 @@ class Game:
                 self.current_frame_string = self.send_data('')
             pygame.display.update()
 
-    def send_data(self, key_strokes):    #compute clientdata to send form client to server
+    def send_data(self, key_strokes):
         if key_strokes != '':
             data = str(self.net.id) + "," + str(self.status) + "," + str(key_strokes)
         else:
@@ -167,22 +159,6 @@ class Game:
 
         keys_to_keep = set(word_data_dict.keys()).intersection(set(self.word_mem.keys()))
         self.word_mem = {k: v for k, v in self.word_mem.items() if k in keys_to_keep}
-
-
-    def get_Name(self):
-        self.name = pygame.key.name()
-
-    def draw_Enter_Name(self):
-        Enter_text = self.font.render('Enter Your Name :', True, pygame.Color('black'))
-        Enter_text_rect = Enter_text.get_rect()
-        Enter_text_rect.topright = (512, 320)
-        self.screen.blit(Enter_text, Enter_text_rect)
-
-    def draw_Input_Name(self, name):
-        Name_text = self.font.render(str(name), True, pygame.Color('black'))
-        Name_text_rect = Name_text.get_rect()
-        Name_text_rect.topleft = (512, 320)
-        self.screen.blit(Name_text, Name_text_rect)
 
     def draw_score(self, score):
         score_text = self.font.render('score:' + str(score), True, pygame.Color('black'))

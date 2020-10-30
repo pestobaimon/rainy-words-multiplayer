@@ -1,5 +1,4 @@
 class Timer:
-
     time = 0
     start = False
 
