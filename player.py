@@ -7,6 +7,7 @@ class Player:
         self.confirm_key = False
         self.id = 0
         self.connected = False
+        self.ready = False
 
     def __init__(self, name, id):
         self.name = name
@@ -15,3 +16,4 @@ class Player:
         self.confirm_key = False
         self.id = id
         self.connected = False
+        self.ready = False

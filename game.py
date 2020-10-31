@@ -20,7 +20,7 @@ class Game:
         self.width = 1024
         self.height = 720
         self.font = pygame.font.Font('freesansbold.ttf', 32)
-        self.player_me = Player('Mon', '1')
+        self.player_me = ""
         self.screen = pygame.display.set_mode((self.width, self.height))
 
     def run(self):
@@ -126,5 +126,11 @@ class Game:
         pygame.draw.polygon(self.screen, pygame.Color('white'), [w.text_rect.topleft, w.text_rect.bottomleft, w.text_rect.topright,
                                             w.text_rect.bottomright])
 
+    def resetGame(self):
+        pass
+    def resetScore(self):
+        pass
+
 game = Game()
 game.run()
+
