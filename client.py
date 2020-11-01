@@ -54,8 +54,12 @@ class Game:
         # draw_text(self, text, xpos, ypos, font_size, r, g, b):
         while self.game_state == 0:
             backspace_clock.tick()
+            keys = pygame.key.get_pressed()
             self.screen.fill(pygame.Color('white'))
             self.screen.blit(pygame.transform.scale(bg_sprite[3], (self.width, self.height)), (0, 0))
+            if keys[pygame.K_BACKSPACE] and len(self.player_me.keystrokes) > 0 and backspace_clock.time >= 2 and type_state:
+                backspace_clock.reset()
+                self.player_me.keystrokes = self.player_me.keystrokes[:-1]
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
@@ -76,10 +80,6 @@ class Game:
                     else:
                         type_state = False
                 if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_BACKSPACE and len(
-                            self.player_me.keystrokes) > 0 and backspace_clock.time >= 2 and type_state:
-                        backspace_clock.reset()
-                        self.player_me.keystrokes = self.player_me.keystrokes[:-1]
                     if event.unicode.isalpha() and type_state:
                         if len(self.player_me.keystrokes) == 20:
                             pass
@@ -287,7 +287,7 @@ class Game:
     def draw_name_stroke(self, current_stroke):
         name_text = self.font.render(current_stroke, True, pygame.Color('black'))
         name_text_rect = name_text.get_rect()
-        name_text_rect.topleft = (260, 270)
+        name_text_rect.topleft = (290, 270)
         self.screen.blit(name_text, name_text_rect)
 
     def draw_bongo_cat(self, png, user):
