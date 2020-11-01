@@ -48,6 +48,51 @@ class Game:
         self.clock = pygame.time.Clock()
         self.game_state = 0
 
+    def insert_name(self):
+        type_state = False
+        backspace_clock = Timer()
+        # draw_text(self, text, xpos, ypos, font_size, r, g, b):
+        while self.game_state == 0:
+            backspace_clock.tick()
+            self.screen.fill(pygame.Color('white'))
+            self.screen.blit(pygame.transform.scale(bg_sprite[3], (self.width, self.height)), (0, 0))
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    quit()
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    if 230 <= mouse_pos[0] <= 830 and 250 <= mouse_pos[1] <= 325:
+                        pygame.draw.rect(self.screen, (255, 0, 255), (230, 250, 600, 75))  # text button
+                        print('text button clicked!')
+                        type_state = True
+                    elif 410 <= mouse_pos[0] <= 610 and 350 <= mouse_pos[1] <= 400:
+                        if type_state and len(self.player_me.keystrokes) > 0:
+                            print('confirm button clicked!')
+                            self.player_me.name = self.player_me.keystrokes
+                            print('Meow '+self.player_me.name+' has joined the fray!')
+                            self.player_me.keystrokes = ''
+                        else:
+                            print('hey what is your name?')
+                    else:
+                        type_state = False
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_BACKSPACE and len(
+                            self.player_me.keystrokes) > 0 and backspace_clock.time >= 2 and type_state:
+                        backspace_clock.reset()
+                        self.player_me.keystrokes = self.player_me.keystrokes[:-1]
+                    if event.unicode.isalpha() and type_state:
+                        if len(self.player_me.keystrokes) == 20:
+                            pass
+                        else:
+                            self.player_me.keystrokes += event.unicode
+            mouse_pos = pygame.mouse.get_pos()
+            self.draw_text('Please insert your name', 550, 200, 40, 0, 0, 0)
+            pygame.draw.rect(self.screen, (255, 255, 255), (410, 350, 200, 50))  # confirm button
+            self.screen.blit(pygame.transform.scale(button_sprite[0], (600, 75)), (230, 250))  # text button texture
+            self.draw_text('confirm', 510, 370, 30, 0, 0, 0)
+            self.draw_name_stroke(self.player_me.keystrokes)
+            pygame.display.update()
+
     def run_lobby(self):
         while self.game_state == 0:
             framerate = self.clock.tick(30)
@@ -232,6 +277,19 @@ class Game:
         keys_to_keep = set(word_data_dict.keys()).intersection(set(self.word_mem.keys()))
         self.word_mem = {k: v for k, v in self.word_mem.items() if k in keys_to_keep}
 
+    def draw_text(self, text, xpos, ypos, font_size, r, g, b):
+        font = pygame.font.Font('Assets/font/pixelart.ttf', font_size)
+        text_show = font.render(str(text), True, (r, g, b))
+        text_show_rect = text_show.get_rect()
+        text_show_rect.center = (xpos, ypos)
+        self.screen.blit(text_show, text_show_rect)
+
+    def draw_name_stroke(self, current_stroke):
+        name_text = self.font.render(current_stroke, True, pygame.Color('black'))
+        name_text_rect = name_text.get_rect()
+        name_text_rect.topleft = (260, 270)
+        self.screen.blit(name_text, name_text_rect)
+
     def draw_bongo_cat(self, png, user):
         if user == 0:  # draw me
             self.screen.blit(pygame.transform.scale(png, (300, 300)), (self.player_x_me, self.player_y_me))
@@ -251,13 +309,6 @@ class Game:
                     self.draw_state_me = 6
                     self.draw_bongo_cat(bongo_state[self.draw_state_me], 0)
                 self.draw_index += 1
-
-    def draw_text(self, text, xpos, ypos, font_size, r, g, b):
-        font = pygame.font.Font('freesansbold.ttf', font_size)
-        text_show = font.render(str(text), True, (r, g, b))
-        text_show_rect = text_show.get_rect()
-        text_show_rect.center = (xpos, ypos)
-        self.screen.blit(text_show, text_show_rect)
 
     def draw_timer(self,time):
         time_text = self.font.render(str(time), True, pygame.Color('black'))
