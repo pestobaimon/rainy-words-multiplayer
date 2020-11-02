@@ -13,18 +13,27 @@ thread_event = threading.Event()
 
 
 class Player:
-    def __init__(self, name, player_id):
+    def __init__(self, name, player_id, game_id):
         self.name = name
         self.score = 0
         self.word_submit = ''
         self.status = 0
         self.id = player_id
+        self.game_id
 
+class Game:
+    def __init__(self, game_id, players):
+        self.game_id = game_id
+        self.frame_string = ''
+        self.word_count = 0
+        self.game_state = 0
+        self.countdown = ''
+        self.players = players
 
 class Server:
     HEADER = 64
     PORT = 5050
-    SERVER = "25.40.56.186"
+    SERVER = "10.202.144.54"
     ADDR = (SERVER, PORT)
     FORMAT = 'utf-8'
     DISCONNECT_MESSAGE = "!DISCONNECT"
@@ -35,13 +44,8 @@ class Server:
             self.server.bind(self.ADDR)
         except socket.error as e:
             print(str(e))
-        self.frame_data = []
-        self.players = {}
-        self.frame_string = ''
         self.client_queues = {}
-        self.word_count = 0
-        self.game_state = 0
-        self.countdown = ''
+        self.games = {}
 
     """
     frameData format
@@ -51,7 +55,7 @@ class Server:
     
     """
 
-    def handle_client(self, conn, addr, client_id, recv_q, clock):
+    def handle_client(self, conn, addr, client_id, recv_q, game_id):
         conn.send(str.encode(str(client_id)))
 
         print(f"[NEW CONNECTION] {addr} connected")
@@ -89,30 +93,34 @@ class Server:
                     conn.sendall(str.encode(msg))
                 elif self.game_state == 2:
                     thread_event.wait()
-                    conn.sendall(str.encode(self.frame_string))
+                    conn.sendall(str.encode(self.frame_data[game_id]))
             except:
                 break
 
-    def start(self):
+    def run_game_serve(self):
         self.server.listen()
         print(f"[LISTENING] Server is listening on {self.SERVER}")
-        lobby_full = False
         client_id = 0
         pygame.init()
-        clock = pygame.time.Clock()
-
-        while self.game_state == 0:
+        game_id = 0
+        players = {}
+        while True:
             conn, addr = self.server.accept()
             self.client_queues[client_id] = Queue()
-            self.players[client_id] = Player(str(client_id), client_id)
+            players[client_id] = Player(str(client_id), client_id, game_id)
             thread = threading.Thread(target=self.handle_client,
-                                      args=(conn, addr, client_id, self.client_queues[client_id], clock))
+                                      args=(conn, addr, client_id, self.client_queues[client_id], game_id))
             thread.start()
             print(f"[ACTIVE CONNECTIONS] {threading.activeCount() - 1}")
-            client_id += 1
-            if threading.activeCount() - 1 == 2:
-                self.game_state = 1
+            if client_id == 1:
+                self.games[game_id] = Game(game_id, players)
 
+            client_id += 1
+
+
+
+    def run_game_room(self):
+        clock = pygame.time.Clock()
         start_ticks = pygame.time.get_ticks()
         while self.game_state == 1:
             framerate = clock.tick(30)
@@ -214,5 +222,6 @@ class Server:
         self.players[client_input[0]].word_submit = client_input[2]
 
 
-server = Server()
-server.start()
+if __name__ == "__main__":
+    server = Server()
+    server.run_game_serve()

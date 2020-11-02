@@ -74,6 +74,8 @@ class Game:
             if keys[pygame.K_BACKSPACE] and len(self.player_me.keystrokes) > 0 and backspace_clock.time >= 2:
                 backspace_clock.reset()
                 self.player_me.keystrokes = self.player_me.keystrokes[:-1]
+            elif keys[pygame.K_RETURN]:
+                self.player_me.confirm_key = True
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
@@ -81,8 +83,6 @@ class Game:
                 elif event.type == pygame.KEYDOWN:
                     if event.unicode.isalpha() or event.unicode == '-':
                         self.player_me.keystrokes += event.unicode
-                    elif event.unicode == '\r':
-                        self.player_me.confirm_key = True
 
             self.screen.fill(pygame.Color('white'))
             self.draw_score(self.player_me.score)
