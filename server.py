@@ -87,17 +87,16 @@ class Server:
                     conn.send(str.encode("Receiving data empty. Disconnecting"))
                     break
                 client_data_arr = reply.split(",")
+                game_id = int(client_data_arr[0])
+                rcv_id = int(client_data_arr[1])
+                if rcv_id != client_id or game_id != 0:
+                    print('token not authorized')
+                    conn.send(str.encode("Token not authorized. Disconnecting"))
+                    break
                 if self.game_state == 0:
                     print('LOBBY')
-                    game_id = int(client_data_arr[0])
-                    rcv_id = int(client_data_arr[1])
                     name = str(client_data_arr[2])
-                    if rcv_id != client_id or game_id != 0:
-                        print('token not authorized')
-                        conn.send(str.encode("Token not authorized. Disconnecting"))
-                        break
-                    else:
-                        recv_q.put([game_id, client_id, name])
+                    self.sync_data([client_id, name])
                     lobby_count = threading.activeCount() - 1
                     msg = "0" + "," + str(self.game_state) + "," + str(lobby_count)
                     conn.sendall(str.encode(msg))
@@ -108,32 +107,18 @@ class Server:
                     conn.sendall(str.encode(msg))
                 elif self.game_state == 2:
                     print('GAME START')
-                    game_id = int(client_data_arr[0])
-                    rcv_id = int(client_data_arr[1])
                     status = int(client_data_arr[2])
                     word_submit = str(client_data_arr[3])
                     action_index = int(client_data_arr[4])
-                    if rcv_id != client_id or game_id != 0:
-                        print('token not authorized')
-                        conn.send(str.encode("Token not authorized. Disconnecting"))
-                        break
-                    else:
-                        recv_q.put([game_id, client_id, status, word_submit, action_index])
+                    recv_q.put([client_id, status, word_submit, action_index])
                     thread_event.wait()
                     conn.sendall(str.encode("0" + "," + str(self.game_state) + "," +
                                             self.players[self.get_opponent(client_id)]
                                             .action_index + str(self.time) + ":" + self.frame_string))
                 elif self.game_state == 3:
                     print('END')
-                    game_id = int(client_data_arr[0])
-                    rcv_id = int(client_data_arr[1])
                     play_again = True if int(client_data_arr[2]) == 1 else False
-                    if rcv_id != client_id or game_id != 0:
-                        print('token not authorized')
-                        conn.send(str.encode("Token not authorized. Disconnecting"))
-                        break
-                    else:
-                        recv_q.put([game_id, client_id, play_again])
+                    recv_q.put([client_id, play_again])
                     msg = "0" + self.game_state + ":"
                     for key in self.players:
                         msg += key + "," + self.players[key].score + self.players[key].play_again + "|"
@@ -178,8 +163,10 @@ class Server:
         word_mem = []
 
         timer = Timer()
+        start_ticks = pygame.time.get_ticks()
         while self.game_state == 2:
             framerate = clock.tick(30)
+            self.time = int((pygame.time.get_ticks() - start_ticks) / 1000)
             self.frame_string = ""
             for key in self.client_queues:
                 try:
@@ -241,6 +228,23 @@ class Server:
             thread_event.set()
             thread_event.clear()
 
+        while self.game_state == 3:
+            for key in self.client_queues:
+                try:
+                    x = self.client_queues[key].get_nowait()
+                    self.sync_data(x)
+                    print(x)
+                except Empty as e:
+                    pass
+            play_again = False
+            for key in self.players:
+                play_again = play_again and self.players[key].play_again
+            if play_again:
+                self.game_state == 2
+
+
+
+
     @staticmethod
     def move_word(w):
         w.text_rect.move_ip(0, w.fall_speed)
@@ -256,9 +260,14 @@ class Server:
         pass
 
     def sync_data(self, client_input):
-        self.players[client_input[0]].status = client_input[1]
-        self.players[client_input[0]].word_submit = client_input[2]
-
+        if self.game_state == 0:
+            self.players[client_input[0]].name = client_input[1]
+        if self.game_state == 2:
+            self.players[client_input[0]].status = client_input[1]
+            self.players[client_input[0]].word_submit = client_input[2]
+            self.players[client_input[0]].action_index = client_input[3]
+        elif self.game_state == 3:
+            self.players[client_input[0]].play_again = client_input[1]
 
     @staticmethod
     def get_opponent(self_id):
