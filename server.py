@@ -19,6 +19,7 @@ class Player:
         self.word_submit = ''
         self.status = 0
         self.id = player_id
+        self.action_index = 0
 
 
 class Server:
@@ -42,16 +43,36 @@ class Server:
         self.word_count = 0
         self.game_state = 0
         self.countdown = ''
+        self.time = 0
 
     """
-    frameData format
-      client_id,score | client_id,score : word_id,word_code,fall_speed,x_pos,y_pos | word_id,word_code,fall_speed,x_pos,y_pos | ,....
-    clientData format
-      [client_id, status, word_submit]
+    Stage 0:
+    client data format
+      [game_id, client_id, name]
+    server data format
+      [game_id, game_state, lobby_count]
     
+    Stage 1:
+    client data format:
+    --
+    server data format:
+    [game_id, game_state, countdown, opponent_name]
+    
+    Stage 2: 
+    client data format: 
+    [game_id, client_id, status, word_submit, action_index] 
+    server data format: 
+    [game_id, game_state, opponent_action_index, time_seconds : client_id, score | client_id,score : word_id,
+    word_code,fall_speed,x_pos,y_pos | word_id,word_code,fall_speed,x_pos,y_pos | , ....] 
+    
+    Stage 3:
+    client data format:
+        [game_id, client_id, play_again]
+    server data format:
+        [game_id, game_state, : client_id, score, play_again | client_id, score, play_again]
     """
 
-    def handle_client(self, conn, addr, client_id, recv_q, clock):
+    def handle_client(self, conn, addr, client_id, recv_q, game_id):
         conn.send(str.encode(str(client_id)))
 
         print(f"[NEW CONNECTION] {addr} connected")
@@ -62,34 +83,62 @@ class Server:
             try:
                 data = conn.recv(4096)
                 reply = data.decode('utf-8')
-                if not data:
+                if not data or data == "DISCONNECT":
                     conn.send(str.encode("Receiving data empty. Disconnecting"))
                     break
-                else:
-                    client_data_arr = reply.split(",")
-                    rcv_id = int(client_data_arr[0])
-                    status = int(client_data_arr[1])
-                    word_submit = str(client_data_arr[2])
-                    if rcv_id != client_id:
-                        connected = False
-                        print('token not authorized')
-                    elif word_submit == ' ':
-                        pass
-                    else:
-                        recv_q.put([rcv_id, status, word_submit])
+                client_data_arr = reply.split(",")
                 if self.game_state == 0:
                     print('LOBBY')
+                    game_id = int(client_data_arr[0])
+                    rcv_id = int(client_data_arr[1])
+                    name = str(client_data_arr[2])
+                    if rcv_id != client_id or game_id != 0:
+                        print('token not authorized')
+                        conn.send(str.encode("Token not authorized. Disconnecting"))
+                        break
+                    else:
+                        recv_q.put([game_id, client_id, name])
                     lobby_count = threading.activeCount() - 1
-                    msg = "0" + "," + str(lobby_count)
+                    msg = "0" + "," + str(self.game_state) + "," + str(lobby_count)
                     conn.sendall(str.encode(msg))
                 elif self.game_state == 1:
                     print('COUNTDOWN')
-                    msg = "1" + "," + self.countdown
+                    msg = "0" + "," + str(self.game_state) + "," + self.countdown + "," + self.players[self.get_opponent(rcv_id)].name
                     thread_event.wait()
                     conn.sendall(str.encode(msg))
                 elif self.game_state == 2:
+                    print('GAME START')
+                    game_id = int(client_data_arr[0])
+                    rcv_id = int(client_data_arr[1])
+                    status = int(client_data_arr[2])
+                    word_submit = str(client_data_arr[3])
+                    action_index = int(client_data_arr[4])
+                    if rcv_id != client_id or game_id != 0:
+                        print('token not authorized')
+                        conn.send(str.encode("Token not authorized. Disconnecting"))
+                        break
+                    else:
+                        recv_q.put([game_id, client_id, status, word_submit, action_index])
                     thread_event.wait()
-                    conn.sendall(str.encode(self.frame_string))
+                    conn.sendall(str.encode("0" + "," + str(self.game_state) + "," +
+                                            self.players[self.get_opponent(client_id)]
+                                            .action_index + str(self.time) + ":" + self.frame_string))
+                elif self.game_state == 3:
+                    print('END')
+                    game_id = int(client_data_arr[0])
+                    rcv_id = int(client_data_arr[1])
+                    play_again = True if int(client_data_arr[2]) == 1 else False
+                    if rcv_id != client_id or game_id != 0:
+                        print('token not authorized')
+                        conn.send(str.encode("Token not authorized. Disconnecting"))
+                        break
+                    else:
+                        recv_q.put([game_id, client_id, play_again])
+                    msg = "0" + self.game_state + ":"
+                    for key in self.players:
+                        msg += key + "," + self.players[key].score + self.players[key].play_again + "|"
+                    msg = msg[:-1]
+                    conn.sendall(str.encode(msg))
             except:
                 break
 
@@ -110,8 +159,6 @@ class Server:
             thread.start()
             print(f"[ACTIVE CONNECTIONS] {threading.activeCount() - 1}")
             client_id += 1
-            if threading.activeCount() - 1 == 2:
-                self.game_state = 1
 
         start_ticks = pygame.time.get_ticks()
         while self.game_state == 1:
@@ -181,7 +228,6 @@ class Server:
 
             if len(removed_words) > 0:
                 word_mem = [i for i in word_mem if i not in removed_words]
-
             for key in self.players:
                 client_string = str(key) + "," + str(self.players[key].score) + "|"
                 self.frame_string += client_string
@@ -213,6 +259,15 @@ class Server:
         self.players[client_input[0]].status = client_input[1]
         self.players[client_input[0]].word_submit = client_input[2]
 
+
+    @staticmethod
+    def get_opponent(self_id):
+        if self_id == 1:
+            return 0
+        elif self_id == 0:
+            return 1
+        else:
+            return 'error'
 
 server = Server()
 server.start()
