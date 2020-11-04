@@ -183,6 +183,8 @@ class Game:
         while self.game_state == 2:
             framerate = clock.tick(30)
             self.time = int((pygame.time.get_ticks() - start_ticks) / 1000)
+            if self.time == 60:
+                self.game_state = 3
             self.frame_string = ""
             for key in self.client_queues:
                 try:
