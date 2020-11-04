@@ -37,7 +37,10 @@ class Game:
 
         # display client
         self.draw_index = 0
+        self.vfx_boom = boom_sprite
         self.screen = pygame.display.set_mode((self.width, self.height))
+        self.keys_to_play = []
+        self.word_to_play_mem = []
         pygame.display.set_caption('client1')
 
         # game system
@@ -51,8 +54,9 @@ class Game:
     def insert_name(self):
         type_state = False
         backspace_clock = Timer()
+        running = True
         # draw_text(self, text, xpos, ypos, font_size, r, g, b):
-        while self.game_state == 0:
+        while running:
             backspace_clock.tick()
             keys = pygame.key.get_pressed()
             self.screen.fill(pygame.Color('white'))
@@ -75,6 +79,7 @@ class Game:
                             self.player_me.name = self.player_me.keystrokes
                             print('Meow '+self.player_me.name+' has joined the fray!')
                             self.player_me.keystrokes = ''
+                            running = False
                         else:
                             print('hey what is your name?')
                     else:
@@ -92,6 +97,7 @@ class Game:
             self.draw_text('confirm', 510, 370, 30, 0, 0, 0)
             self.draw_name_stroke(self.player_me.keystrokes)
             pygame.display.update()
+        self.run_lobby()
 
     def run_lobby(self):
         while self.game_state == 0:
@@ -99,23 +105,25 @@ class Game:
             data = self.send_data('').split(',')
             self.game_state = int(data[0])
             self.screen.fill(pygame.Color('white'))
-            self.screen.blit(pygame.transform.scale(bg_sprite[2], (self.width, self.height)), (0, 0))
+            self.screen.blit(pygame.transform.scale(bg_sprite[5], (self.width, self.height)), (0, 0))
+            self.screen.blit(pygame.transform.rotate(pygame.transform.scale(bg_sprite[4], (750, 400)), 0), (40, 50))
+            self.draw_text_waiting('Hello ! , ' + self.player_me.name, 100, 120)
+            self.draw_text_waiting('Waiting for more bongo...', 85, 200)
             self.draw_connected_player_count(data[1])
-            self.draw_text('Player 1: Ready!', 120, 240, 40, 255, 255, 255)
             self.screen.blit(pygame.transform.rotate(pygame.transform.scale(bongo_sprite[1], (1024, 1024)), 12.5),
-                             (-40, 40))
+                             (120, 40))
+            self.screen.blit(pygame.transform.rotate(pygame.transform.scale(bg_sprite[6], (300, 300)), -12.5),
+                             (600, 300))
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     quit()
             pygame.display.update()
-
         self.count_down()
 
     def count_down(self):
         while self.game_state == 1:
             data = self.send_data('').split(',')
-            print(data)
             self.game_state = int(data[0])
             self.screen.fill(pygame.Color('white'))
             self.screen.blit(pygame.transform.scale(bg_sprite[2], (self.width, self.height)), (0, 0))
@@ -157,10 +165,9 @@ class Game:
         self.start_game()
 
     def start_game(self):
-
         running = True
         backspace_clock = Timer()
-
+        removed_word_animation = []
         while running:
             framerate = self.clock.tick(30)
             backspace_clock.tick()
@@ -219,10 +226,20 @@ class Game:
                     self.word_mem[word_id].unmatch_text()
                     self.print_move_word(self.word_mem[word_id])
                 else:
-                    print('print word')
+                    #print('print word')
                     self.print_move_word(self.word_mem[word_id])
-
-            print(self.current_frame_string)
+            for word in self.word_to_play_mem:
+                word_removed = [self.word_to_play_mem[word], 0]
+                removed_word_animation.append(word_removed)
+            for word in removed_word_animation:
+                print(word[0].word)
+                self.display_VFX(word[0], word[1])
+                if word[1] == 11:
+                    word[1] = 0
+                    removed_word_animation.remove(word)
+                    print("finished "+word[0].word)
+                word[1] += 1
+            #print(self.current_frame_string)
             if self.player_me.confirm_key:
                 self.current_frame_string = self.send_data(self.player_me.keystrokes)
                 self.player_me.keystrokes = ''
@@ -275,7 +292,12 @@ class Game:
                                                 int(word_data_dict[word_data][4]))
 
         keys_to_keep = set(word_data_dict.keys()).intersection(set(self.word_mem.keys()))
+        keys_to_play = set(self.word_mem.keys()).difference(set(word_data_dict.keys()))
+        #print("word_mem", self.word_mem.keys(), "server",word_data_dict.keys(), "keys to play", keys_to_play)
+        self.word_to_play_mem = {k: v for k, v in self.word_mem.items() if k in keys_to_play}
         self.word_mem = {k: v for k, v in self.word_mem.items() if k in keys_to_keep}
+
+
 
     def draw_text(self, text, xpos, ypos, font_size, r, g, b):
         font = pygame.font.Font('Assets/font/pixelart.ttf', font_size)
@@ -309,6 +331,18 @@ class Game:
                     self.draw_state_me = 6
                     self.draw_bongo_cat(bongo_state[self.draw_state_me], 0)
                 self.draw_index += 1
+
+    def display_VFX(self, w, frame):
+        self.screen.blit(pygame.transform.scale(self.vfx_boom[frame], (200, 200)), (w.x_pos-50, w.y_pos-60))
+
+    def draw_text_waiting(self, text, xpos, ypos):
+        font = pygame.font.Font("Assets/font/pixelart.ttf", 35)
+        #font = pygame.font.Font("pixelfont", 40, bold = True)
+        text_a = font.render(text, True, pygame.Color(102, 0, 102))
+
+        text_a_rect = text_a.get_rect()
+        text_a_rect.topleft = (xpos, ypos)
+        self.screen.blit(text_a, text_a_rect)
 
     def draw_timer(self,time):
         time_text = self.font.render(str(time), True, pygame.Color('black'))
@@ -347,10 +381,10 @@ class Game:
         self.screen.blit(score_text, score_text_rect)
 
     def draw_connected_player_count(self, player_count):
-        font = pygame.font.Font('freesansbold.ttf', 50)
-        text = font.render('Connected Players:' + str(player_count) + '/2', True, pygame.Color('black'))
+        font = pygame.font.Font('Assets/font/pixelmix_bold.ttf', 35)
+        text = font.render('(' + str(player_count) + '/2)', True, pygame.Color(102, 0, 102))
         text_rect = text.get_rect()
-        text_rect.center = (int(self.width / 2), int(self.height / 2))
+        text_rect.center = (700, 212)
         self.screen.blit(text, text_rect)
 
     def draw_countdown_timer(self, time):
@@ -372,4 +406,4 @@ class Game:
 
 
 game = Game()
-game.run_lobby()
+game.insert_name()

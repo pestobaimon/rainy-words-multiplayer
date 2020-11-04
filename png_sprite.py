@@ -15,7 +15,10 @@ bg_sprite = [
     pygame.image.load('Assets/bg/skybg.png'),
     pygame.image.load('Assets/bg/keyboard.png'),
     pygame.image.load('Assets/bg/lobby.jpg'),
-    pygame.image.load('Assets/bg/insertnamebg.png')
+    pygame.image.load('Assets/bg/insertnamebg.png'),
+    pygame.image.load('Assets/bg/textbox8.png'),
+    pygame.image.load('Assets/bg/waiting.png'),
+    pygame.image.load('Assets/bg/hatf.png')
 ]
 
 addi_sprite = [
@@ -25,4 +28,19 @@ addi_sprite = [
 
 button_sprite = [
     pygame.image.load('Assets/text_surface/black_text_box.png')
+]
+
+boom_sprite = [
+    pygame.image.load('Assets/boom_sprite/b1.png'),
+    pygame.image.load('Assets/boom_sprite/b2.png'),
+    pygame.image.load('Assets/boom_sprite/b3.png'),
+    pygame.image.load('Assets/boom_sprite/b4.png'),
+    pygame.image.load('Assets/boom_sprite/b5.png'),
+    pygame.image.load('Assets/boom_sprite/b6.png'),
+    pygame.image.load('Assets/boom_sprite/b7.png'),
+    pygame.image.load('Assets/boom_sprite/b8.png'),
+    pygame.image.load('Assets/boom_sprite/b9.png'),
+    pygame.image.load('Assets/boom_sprite/b10.png'),
+    pygame.image.load('Assets/boom_sprite/b11.png'),
+    pygame.image.load('Assets/boom_sprite/b12.png')
 ]
