@@ -88,20 +88,17 @@ class Server:
                     conn.send(str.encode("Token not authorized. Disconnecting"))
                     break
                 if current_game.game_state == 0:
-                    print('LOBBY')
                     name = str(client_data_arr[2])
                     current_game.sync_data([client_id, name])
                     lobby_count = threading.activeCount() - 1
                     msg = "0" + "," + str(current_game.game_state) + "," + str(lobby_count)
                     conn.sendall(str.encode(msg))
                 elif current_game.game_state == 1:
-                    print('COUNTDOWN')
                     msg = "0" + "," + str(current_game.game_state) + "," + current_game.countdown + "," + current_game.players[
                         get_opponent(rcv_id)].name
                     thread_event.wait()
                     conn.sendall(str.encode(msg))
                 elif current_game.game_state == 2:
-                    print('GAME START')
                     status = int(client_data_arr[2])
                     word_submit = str(client_data_arr[3])
                     action_index = int(client_data_arr[4])
@@ -134,12 +131,15 @@ class Server:
                                       args=(conn, addr, client_id, game_id))
             if client_id == 0:
                 self.games[game_id] = Game(game_id, {})
+                print('opened room', game_id)
                 self.games[game_id].players[client_id] = Player(str(client_id), client_id, game_id)
+                print('Added player', client_id, 'to', 'room', game_id)
                 self.games[game_id].client_queues[client_id] = Queue()
                 self.games[game_id].run_game_room()
                 client_id += 1
             elif client_id == 1:
                 self.games[game_id].players[client_id] = Player(str(client_id), client_id, game_id)
+                print('Added player', client_id, 'to', 'room', game_id)
                 self.games[game_id].client_queues[client_id] = Queue()
                 game_id += 1
                 client_id = 0
