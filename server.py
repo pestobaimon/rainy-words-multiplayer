@@ -179,8 +179,10 @@ class Game:
         word_mem = []
 
         timer = Timer()
+        start_ticks = pygame.time.get_ticks()
         while self.game_state == 2:
             framerate = clock.tick(30)
+            self.time = int((pygame.time.get_ticks() - start_ticks) / 1000)
             self.frame_string = ""
             for key in self.client_queues:
                 try:
@@ -229,7 +231,6 @@ class Game:
 
             if len(removed_words) > 0:
                 word_mem = [i for i in word_mem if i not in removed_words]
-
             for key in self.players:
                 client_string = str(key) + "," + str(self.players[key].score) + "|"
                 self.frame_string += client_string
@@ -242,6 +243,20 @@ class Game:
             # print(self.frame_string)
             thread_event.set()
             thread_event.clear()
+
+        while self.game_state == 3:
+            for key in self.client_queues:
+                try:
+                    x = self.client_queues[key].get_nowait()
+                    self.sync_data(x)
+                    print(x)
+                except Empty as e:
+                    pass
+            play_again = False
+            for key in self.players:
+                play_again = play_again and self.players[key].play_again
+            if play_again:
+                self.game_state = 2
 
     @staticmethod
     def move_word(w):
