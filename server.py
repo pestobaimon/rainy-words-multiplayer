@@ -21,19 +21,11 @@ class Player:
         self.id = player_id
         self.game_id
 
-class Game:
-    def __init__(self, game_id, players):
-        self.game_id = game_id
-        self.frame_string = ''
-        self.word_count = 0
-        self.game_state = 0
-        self.countdown = ''
-        self.players = players
 
 class Server:
     HEADER = 64
     PORT = 5050
-    SERVER = "10.202.144.54"
+    SERVER = "192.168.1.37"
     ADDR = (SERVER, PORT)
     FORMAT = 'utf-8'
     DISCONNECT_MESSAGE = "!DISCONNECT"
@@ -44,24 +36,43 @@ class Server:
             self.server.bind(self.ADDR)
         except socket.error as e:
             print(str(e))
-        self.client_queues = {}
         self.games = {}
 
     """
-    frameData format
-      client_id,score | client_id,score : word_id,word_code,fall_speed,x_pos,y_pos | word_id,word_code,fall_speed,x_pos,y_pos | ,....
-    clientData format
-      [client_id, status, word_submit]
-    
+    Stage 0:
+    client data format
+      [game_id, client_id, name]
+    server data format
+      [game_id, game_state, lobby_count]
+
+    Stage 1:
+    client data format:
+    --
+    server data format:
+    [game_id, game_state, countdown, opponent_name]
+
+    Stage 2: 
+    client data format: 
+    [game_id, client_id, status, word_submit, action_index] 
+    server data format: 
+    [game_id, game_state, opponent_action_index, time_seconds : client_id, score | client_id,score : word_id,
+    word_code,fall_speed,x_pos,y_pos | word_id,word_code,fall_speed,x_pos,y_pos | , ....] 
+
+    Stage 3:
+    client data format:
+        [game_id, client_id, play_again]
+    server data format:
+        [game_id, game_state, : client_id, score, play_again | client_id, score, play_again]
     """
 
-    def handle_client(self, conn, addr, client_id, recv_q, game_id):
+    def handle_client(self, conn, addr, client_id, game_id):
         conn.send(str.encode(str(client_id + "," + game_id)))
 
         print(f"[NEW CONNECTION] {addr} connected")
 
         connected = True
-
+        current_game = self.games[game_id]
+        recv_q = current_game.client_queues[client_id]
         while connected:
             try:
                 data = conn.recv(4096)
@@ -76,36 +87,36 @@ class Server:
                     print('token not authorized')
                     conn.send(str.encode("Token not authorized. Disconnecting"))
                     break
-                if self.game_state == 0:
+                if current_game.game_state == 0:
                     print('LOBBY')
                     name = str(client_data_arr[2])
-                    self.sync_data([client_id, name])
+                    current_game.sync_data([client_id, name])
                     lobby_count = threading.activeCount() - 1
-                    msg = "0" + "," + str(self.game_state) + "," + str(lobby_count)
+                    msg = "0" + "," + str(current_game.game_state) + "," + str(lobby_count)
                     conn.sendall(str.encode(msg))
-                elif self.game_state == 1:
+                elif current_game.game_state == 1:
                     print('COUNTDOWN')
-                    msg = "0" + "," + str(self.game_state) + "," + self.countdown + "," + self.players[
-                        self.get_opponent(rcv_id)].name
+                    msg = "0" + "," + str(current_game.game_state) + "," + current_game.countdown + "," + current_game.players[
+                        get_opponent(rcv_id)].name
                     thread_event.wait()
                     conn.sendall(str.encode(msg))
-                elif self.game_state == 2:
+                elif current_game.game_state == 2:
                     print('GAME START')
                     status = int(client_data_arr[2])
                     word_submit = str(client_data_arr[3])
                     action_index = int(client_data_arr[4])
                     recv_q.put([client_id, status, word_submit, action_index])
                     thread_event.wait()
-                    conn.sendall(str.encode("0" + "," + str(self.game_state) + "," +
-                                            self.players[self.get_opponent(client_id)]
-                                            .action_index + str(self.time) + ":" + self.frame_string))
-                elif self.game_state == 3:
+                    conn.sendall(str.encode("0" + "," + str(current_game.game_state) + "," +
+                                            current_game.players[get_opponent(client_id)]
+                                            .action_index + str(current_game.time) + ":" + current_game.frame_string))
+                elif current_game.game_state == 3:
                     print('END')
                     play_again = True if int(client_data_arr[2]) == 1 else False
                     recv_q.put([client_id, play_again])
-                    msg = "0" + self.game_state + ":"
-                    for key in self.players:
-                        msg += key + "," + self.players[key].score + self.players[key].play_again + "|"
+                    msg = "0" + current_game.game_state + ":"
+                    for key in current_game.players:
+                        msg += key + "," + current_game.players[key].score + current_game.players[key].play_again + "|"
                     msg = msg[:-1]
                     conn.sendall(str.encode(msg))
             except:
@@ -117,24 +128,36 @@ class Server:
         client_id = 0
         pygame.init()
         game_id = 0
-        players = {}
         while True:
             conn, addr = self.server.accept()
-            self.client_queues[client_id] = Queue()
-            players[client_id] = Player(str(client_id), client_id, game_id)
             thread = threading.Thread(target=self.handle_client,
-                                      args=(conn, addr, client_id, self.client_queues[client_id], game_id))
+                                      args=(conn, addr, client_id, game_id))
+            if client_id == 0:
+                self.games[game_id] = Game(game_id, {})
+                self.games[game_id].players[client_id] = Player(str(client_id), client_id, game_id)
+                self.games[game_id].client_queues[client_id] = Queue()
+                self.games[game_id].run_game_room()
+                client_id += 1
+            elif client_id == 1:
+                self.games[game_id].players[client_id] = Player(str(client_id), client_id, game_id)
+                self.games[game_id].client_queues[client_id] = Queue()
+                game_id += 1
+                client_id = 0
             thread.start()
             print(f"[ACTIVE CONNECTIONS] {threading.activeCount() - 1}")
-            if client_id == 1:
-                self.games[game_id] = Game(game_id, players)
-                players = {}
-                client_id = 0
-            elif client_id < 1:
-                client_id += 1
 
 
-
+class Game:
+    def __init__(self, game_id, players):
+        self.game_id = game_id
+        self.game_state = 0
+        self.frame_string = ''
+        self.word_count = 0
+        self.game_state = 0
+        self.countdown = ''
+        self.players = players
+        self.time = 0
+        self.client_queues = {}
 
     def run_game_room(self):
         clock = pygame.time.Clock()
@@ -235,8 +258,23 @@ class Server:
         pass
 
     def sync_data(self, client_input):
-        self.players[client_input[0]].status = client_input[1]
-        self.players[client_input[0]].word_submit = client_input[2]
+        if self.game_state == 0:
+            self.players[client_input[0]].name = client_input[1]
+        if self.game_state == 2:
+            self.players[client_input[0]].status = client_input[1]
+            self.players[client_input[0]].word_submit = client_input[2]
+            self.players[client_input[0]].action_index = client_input[3]
+        elif self.game_state == 3:
+            self.players[client_input[0]].play_again = client_input[1]
+
+
+def get_opponent(self_id):
+    if self_id == 1:
+        return 0
+    elif self_id == 0:
+        return 1
+    else:
+        return 'error'
 
 
 if __name__ == "__main__":
