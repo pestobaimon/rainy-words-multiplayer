@@ -19,7 +19,8 @@ class Player:
         self.word_submit = ''
         self.status = 0
         self.id = player_id
-        self.game_id
+        self.game_id = game_id
+        self.action_index = 0
 
 
 class Server:
