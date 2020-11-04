@@ -193,7 +193,7 @@ class Game:
                     self.sync_data(x)
                     print(x)
                 except Empty as e:
-                    pass
+                    print(e)
 
             if len(word_mem) <= 1:
                 timer.tick()
@@ -254,7 +254,7 @@ class Game:
                     self.sync_data(x)
                     print(x)
                 except Empty as e:
-                    pass
+                    print(e)
             play_again = False
             for key in self.players:
                 play_again = play_again and self.players[key].play_again
