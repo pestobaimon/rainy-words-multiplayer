@@ -56,7 +56,7 @@ class Server:
     """
 
     def handle_client(self, conn, addr, client_id, recv_q, game_id):
-        conn.send(str.encode(str(client_id)))
+        conn.send(str.encode(str(client_id + "," + game_id)))
 
         print(f"[NEW CONNECTION] {addr} connected")
 
@@ -66,34 +66,48 @@ class Server:
             try:
                 data = conn.recv(4096)
                 reply = data.decode('utf-8')
-                if not data:
+                if not data or data == "DISCONNECT":
                     conn.send(str.encode("Receiving data empty. Disconnecting"))
                     break
-                else:
-                    client_data_arr = reply.split(",")
-                    rcv_id = int(client_data_arr[0])
-                    status = int(client_data_arr[1])
-                    word_submit = str(client_data_arr[2])
-                    if rcv_id != client_id:
-                        connected = False
-                        print('token not authorized')
-                    elif word_submit == ' ':
-                        pass
-                    else:
-                        recv_q.put([rcv_id, status, word_submit])
+                client_data_arr = reply.split(",")
+                game_id = int(client_data_arr[0])
+                rcv_id = int(client_data_arr[1])
+                if rcv_id != client_id or game_id != 0:
+                    print('token not authorized')
+                    conn.send(str.encode("Token not authorized. Disconnecting"))
+                    break
                 if self.game_state == 0:
                     print('LOBBY')
+                    name = str(client_data_arr[2])
+                    self.sync_data([client_id, name])
                     lobby_count = threading.activeCount() - 1
-                    msg = "0" + "," + str(lobby_count)
+                    msg = "0" + "," + str(self.game_state) + "," + str(lobby_count)
                     conn.sendall(str.encode(msg))
                 elif self.game_state == 1:
                     print('COUNTDOWN')
-                    msg = "1" + "," + self.countdown
+                    msg = "0" + "," + str(self.game_state) + "," + self.countdown + "," + self.players[
+                        self.get_opponent(rcv_id)].name
                     thread_event.wait()
                     conn.sendall(str.encode(msg))
                 elif self.game_state == 2:
+                    print('GAME START')
+                    status = int(client_data_arr[2])
+                    word_submit = str(client_data_arr[3])
+                    action_index = int(client_data_arr[4])
+                    recv_q.put([client_id, status, word_submit, action_index])
                     thread_event.wait()
-                    conn.sendall(str.encode(self.frame_data[game_id]))
+                    conn.sendall(str.encode("0" + "," + str(self.game_state) + "," +
+                                            self.players[self.get_opponent(client_id)]
+                                            .action_index + str(self.time) + ":" + self.frame_string))
+                elif self.game_state == 3:
+                    print('END')
+                    play_again = True if int(client_data_arr[2]) == 1 else False
+                    recv_q.put([client_id, play_again])
+                    msg = "0" + self.game_state + ":"
+                    for key in self.players:
+                        msg += key + "," + self.players[key].score + self.players[key].play_again + "|"
+                    msg = msg[:-1]
+                    conn.sendall(str.encode(msg))
             except:
                 break
 
