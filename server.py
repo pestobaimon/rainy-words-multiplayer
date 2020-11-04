@@ -128,8 +128,11 @@ class Server:
             print(f"[ACTIVE CONNECTIONS] {threading.activeCount() - 1}")
             if client_id == 1:
                 self.games[game_id] = Game(game_id, players)
+                players = {}
+                client_id = 0
+            elif client_id < 1:
+                client_id += 1
 
-            client_id += 1
 
 
 
