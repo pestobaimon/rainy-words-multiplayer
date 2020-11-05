@@ -21,12 +21,13 @@ class Player:
         self.id = player_id
         self.game_id = game_id
         self.action_index = 0
+        self.ready = False
 
 
 class Server:
     HEADER = 64
     PORT = 5050
-    SERVER = "10.204.187.31"
+    SERVER = "192.168.1.37"
     ADDR = (SERVER, PORT)
     FORMAT = 'utf-8'
     DISCONNECT_MESSAGE = "!DISCONNECT"
@@ -36,13 +37,13 @@ class Server:
         try:
             self.server.bind(self.ADDR)
         except socket.error as e:
-            print(str(e))
+            print('error', str(e))
         self.games = {}
 
     """
     Stage 0:
     client data format
-      [game_id, client_id, name]
+      [game_id, client_id, client_game_state, name]
     server data format
       [game_id, game_state, lobby_count]
 
@@ -54,20 +55,20 @@ class Server:
 
     Stage 2: 
     client data format: 
-    [game_id, client_id, status, word_submit, action_index] 
+    [game_id, client_id, client_game_state, word_submit, action_index] 
     server data format: 
     [game_id, game_state, opponent_action_index, time_seconds : client_id, score | client_id,score : word_id,
     word_code,fall_speed,x_pos,y_pos | word_id,word_code,fall_speed,x_pos,y_pos | , ....] 
 
     Stage 3:
     client data format:
-        [game_id, client_id, play_again]
+        [game_id, client_id, client_game_state, play_again]
     server data format:
         [game_id, game_state, : client_id, score, play_again | client_id, score, play_again]
     """
 
     def handle_client(self, conn, addr, client_id, game_id):
-        conn.send(str.encode(str(client_id + "," + game_id)))
+        conn.send(str.encode(str(game_id) + "," + str(client_id)))
 
         print(f"[NEW CONNECTION] {addr} connected")
 
@@ -75,50 +76,59 @@ class Server:
         current_game = self.games[game_id]
         recv_q = current_game.client_queues[client_id]
         while connected:
-            try:
-                data = conn.recv(4096)
-                reply = data.decode('utf-8')
-                if not data or data == "DISCONNECT":
-                    conn.send(str.encode("Receiving data empty. Disconnecting"))
-                    break
-                client_data_arr = reply.split(",")
-                game_id = int(client_data_arr[0])
-                rcv_id = int(client_data_arr[1])
-                if rcv_id != client_id or game_id != 0:
-                    print('token not authorized')
-                    conn.send(str.encode("Token not authorized. Disconnecting"))
-                    break
-                if current_game.game_state == 0:
-                    name = str(client_data_arr[2])
+
+            data = conn.recv(4096)
+            reply = data.decode('utf-8')
+            if not data or data == "DISCONNECT":
+                conn.sendall(str.encode("Receiving data empty. Disconnecting"))
+                print(f'disconnected from {addr} ')
+                break
+            client_data_arr = reply.split(",")
+            rcv_game_id = int(client_data_arr[0])
+            rcv_id = int(client_data_arr[1])
+            rcv_game_state = int(client_data_arr[2])
+            if rcv_id != client_id or rcv_game_id != game_id:
+                print('token not authorized')
+                conn.sendall(str.encode("Token not authorized. Disconnecting"))
+                print(f'disconnected from {addr} ')
+                break
+            if current_game.game_state == 0:
+                if rcv_game_state == current_game.game_state:
+                    name = str(client_data_arr[3])
+                    if name != "" or " ":
+                        current_game.players[client_id].ready = True
                     current_game.sync_data([client_id, name])
-                    lobby_count = threading.activeCount() - 1
-                    msg = "0" + "," + str(current_game.game_state) + "," + str(lobby_count)
-                    conn.sendall(str.encode(msg))
-                elif current_game.game_state == 1:
-                    msg = "0" + "," + str(current_game.game_state) + "," + current_game.countdown + "," + current_game.players[
-                        get_opponent(rcv_id)].name
-                    thread_event.wait()
-                    conn.sendall(str.encode(msg))
-                elif current_game.game_state == 2:
-                    status = int(client_data_arr[2])
+                msg = str(game_id) + "," + str(current_game.game_state) + "," + str(len(current_game.players))
+                print("msg_0", msg)
+                conn.sendall(str.encode(msg))
+            elif current_game.game_state == 1:
+                msg = str(game_id) + "," + str(current_game.game_state) + "," + current_game.countdown + "," + \
+                      current_game.players[
+                          get_opponent(client_id)].name
+                print("msg_1", msg)
+                thread_event.wait()
+                conn.sendall(str.encode(msg))
+
+            elif current_game.game_state == 2:
+                if rcv_game_state == current_game.game_state:
                     word_submit = str(client_data_arr[3])
                     action_index = int(client_data_arr[4])
-                    recv_q.put([client_id, status, word_submit, action_index])
-                    thread_event.wait()
-                    conn.sendall(str.encode("0" + "," + str(current_game.game_state) + "," +
-                                            current_game.players[get_opponent(client_id)]
-                                            .action_index + str(current_game.time) + ":" + current_game.frame_string))
-                elif current_game.game_state == 3:
+                    recv_q.put([client_id, word_submit, action_index])
+                thread_event.wait()
+                msg = str(game_id) + "," + str(current_game.game_state) + "," + str(current_game.players[get_opponent(client_id)].action_index) + "," + str(current_game.time) + ":" + current_game.frame_string
+                print('msg_2', msg)
+                conn.sendall(str.encode(msg))
+            elif current_game.game_state == 3:
+                if rcv_game_state == current_game.game_state:
                     print('END')
                     play_again = True if int(client_data_arr[2]) == 1 else False
                     recv_q.put([client_id, play_again])
-                    msg = "0" + current_game.game_state + ":"
-                    for key in current_game.players:
-                        msg += key + "," + current_game.players[key].score + current_game.players[key].play_again + "|"
-                    msg = msg[:-1]
-                    conn.sendall(str.encode(msg))
-            except:
-                break
+                msg = str(game_id) + str(current_game.game_state) + ":"
+                for key in current_game.players:
+                    msg += key + "," + current_game.players[key].score + current_game.players[key].play_again + "|"
+                msg = msg[:-1]
+                thread_event.wait()
+                conn.sendall(str.encode(msg))
 
     def run_game_serve(self):
         self.server.listen()
@@ -128,24 +138,25 @@ class Server:
         game_id = 0
         while True:
             conn, addr = self.server.accept()
-            thread = threading.Thread(target=self.handle_client,
-                                      args=(conn, addr, client_id, game_id))
+            thread_client = threading.Thread(target=self.handle_client,
+                                             args=(conn, addr, client_id, game_id))
             if client_id == 0:
                 self.games[game_id] = Game(game_id, {})
                 print('opened room', game_id)
-                self.games[game_id].players[client_id] = Player(str(client_id), client_id, game_id)
+                self.games[game_id].players[client_id] = Player('', client_id, game_id)
                 print('Added player', client_id, 'to', 'room', game_id)
                 self.games[game_id].client_queues[client_id] = Queue()
-                self.games[game_id].run_game_room()
+                thread_game = threading.Thread(target=self.games[game_id].run_game_room)
+                thread_game.start()
                 client_id += 1
             elif client_id == 1:
-                self.games[game_id].players[client_id] = Player(str(client_id), client_id, game_id)
+                self.games[game_id].players[client_id] = Player('', client_id, game_id)
                 print('Added player', client_id, 'to', 'room', game_id)
                 self.games[game_id].client_queues[client_id] = Queue()
                 game_id += 1
                 client_id = 0
-            thread.start()
-            print(f"[ACTIVE CONNECTIONS] {threading.activeCount() - 1}")
+            thread_client.start()
+            print(f"[ACTIVE CONNECTIONS] {threading.activeCount() - 1 - len(self.games)}")
 
 
 class Game:
@@ -162,6 +173,15 @@ class Game:
 
     def run_game_room(self):
         clock = pygame.time.Clock()
+
+        while self.game_state == 0:
+            all_ready = True
+            if len(self.players) == 2:
+                for key in self.players:
+                    all_ready = all_ready and self.players[key].ready
+                if all_ready:
+                    self.game_state = 1
+
         start_ticks = pygame.time.get_ticks()
         while self.game_state == 1:
             framerate = clock.tick(30)
@@ -174,6 +194,7 @@ class Game:
                 self.countdown = "1"
             else:
                 self.game_state = 2
+                print('gamestate = 2')
             thread_event.set()
             thread_event.clear()
 
@@ -181,10 +202,11 @@ class Game:
 
         timer = Timer()
         start_ticks = pygame.time.get_ticks()
+
         while self.game_state == 2:
             framerate = clock.tick(30)
             self.time = int((pygame.time.get_ticks() - start_ticks) / 1000)
-            if self.time == 60:
+            if self.time == 10:
                 self.game_state = 3
             self.frame_string = ""
             for key in self.client_queues:
@@ -193,7 +215,7 @@ class Game:
                     self.sync_data(x)
                     print(x)
                 except Empty as e:
-                    print(e)
+                    pass
 
             if len(word_mem) <= 1:
                 timer.tick()
@@ -213,7 +235,7 @@ class Game:
             for word in word_mem:
                 if not word.disabled:
                     self.move_word(word)
-                    if word.text_rect.bottomleft[1] > 800:
+                    if word.text_rect.bottomleft[1] > 730:
                         word.disable()
                         removed_words.append(word)
 
@@ -243,7 +265,6 @@ class Game:
                     word.text_rect.topleft[0]) + "," + str(word.text_rect.topleft[1]) + "|"
                 self.frame_string += word_string
             self.frame_string = self.frame_string[:-1]
-            # print(self.frame_string)
             thread_event.set()
             thread_event.clear()
 
@@ -254,7 +275,7 @@ class Game:
                     self.sync_data(x)
                     print(x)
                 except Empty as e:
-                    print(e)
+                    pass
             play_again = False
             for key in self.players:
                 play_again = play_again and self.players[key].play_again
@@ -278,10 +299,10 @@ class Game:
     def sync_data(self, client_input):
         if self.game_state == 0:
             self.players[client_input[0]].name = client_input[1]
+            print('client input', client_input)
         if self.game_state == 2:
-            self.players[client_input[0]].status = client_input[1]
-            self.players[client_input[0]].word_submit = client_input[2]
-            self.players[client_input[0]].action_index = client_input[3]
+            self.players[client_input[0]].word_submit = client_input[1]
+            self.players[client_input[0]].action_index = client_input[2]
         elif self.game_state == 3:
             self.players[client_input[0]].play_again = client_input[1]
 
