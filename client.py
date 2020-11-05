@@ -50,6 +50,7 @@ class Game:
         self.word_mem = {}
         self.clock = pygame.time.Clock()
         self.game_state = 0
+        self.game_id = ''
 
     def insert_name(self):
         type_state = False
@@ -69,8 +70,7 @@ class Game:
                     pygame.quit()
                     quit()
                 if event.type == pygame.MOUSEBUTTONDOWN:
-                    if 230 <= mouse_pos[0] <= 830 and 250 <= mouse_pos[1] <= 325:
-                        pygame.draw.rect(self.screen, (255, 0, 255), (230, 250, 600, 75))  # text button
+                    if 230 <= mouse_pos[0] <= 830 and 250 <= mouse_pos[1] <= 325:  # text button
                         print('text button clicked!')
                         type_state = True
                     elif 410 <= mouse_pos[0] <= 610 and 350 <= mouse_pos[1] <= 400:
@@ -85,7 +85,7 @@ class Game:
                     else:
                         type_state = False
                 if event.type == pygame.KEYDOWN:
-                    if event.unicode.isalpha() and type_state:
+                    if type_state:
                         if len(self.player_me.keystrokes) == 20:
                             pass
                         else:
@@ -156,6 +156,8 @@ class Game:
                                  (350, -500))  # top right
                 self.screen.blit(pygame.transform.rotate(pygame.transform.scale(bongo_sprite[1], (1024, 1024)), 205.5),
                                  (-620, -610))  # top left
+            self.draw_text('Your Opponent is--- Meow '+self.player_friend.name+'!', 0, 0, 60, 255, 255, 255)
+            self.draw_text('Lobby ID: '+self.game_id, 0, 0, 40, 255, 255, 255)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
@@ -232,12 +234,10 @@ class Game:
                 word_removed = [self.word_to_play_mem[word], 0]
                 removed_word_animation.append(word_removed)
             for word in removed_word_animation:
-                print(word[0].word)
                 self.display_VFX(word[0], word[1])
                 if word[1] == 11:
                     word[1] = 0
                     removed_word_animation.remove(word)
-                    print("finished "+word[0].word)
                 word[1] += 1
             #print(self.current_frame_string)
             if self.player_me.confirm_key:
@@ -388,10 +388,10 @@ class Game:
         self.screen.blit(text, text_rect)
 
     def draw_countdown_timer(self, time):
-        font = pygame.font.Font('Assets/font/pixelmix.ttf', 50)
-        text = font.render('Game Starting In:' + time, True, pygame.Color('black'))
+        font = pygame.font.Font('Assets/font/pixelmix.ttf', 70)
+        text = font.render(time, True, pygame.Color('black'))
         if time == '1':
-            text = font.render('Game Starting In:' + time + '!', True, pygame.Color('black'))
+            text = font.render(time + '!', True, pygame.Color('black'))
         text_rect = text.get_rect()
         text_rect.center = (int(self.width / 2), int(self.height / 2))
         self.screen.blit(text, text_rect)

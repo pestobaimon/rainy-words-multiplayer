@@ -24,7 +24,7 @@ class Player:
 class Server:
     HEADER = 64
     PORT = 5050
-    SERVER = "100.67.128.104"
+    SERVER = "10.202.170.151"
     ADDR = (SERVER, PORT)
     FORMAT = 'utf-8'
     DISCONNECT_MESSAGE = "!DISCONNECT"
