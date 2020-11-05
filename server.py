@@ -22,12 +22,13 @@ class Player:
         self.game_id = game_id
         self.action_index = 0
         self.ready = False
+        self.play_again = False
 
 
 class Server:
     HEADER = 64
     PORT = 5050
-    SERVER = "192.168.1.37"
+    SERVER = "192.168.1.13"
     ADDR = (SERVER, PORT)
     FORMAT = 'utf-8'
     DISCONNECT_MESSAGE = "!DISCONNECT"
@@ -62,7 +63,7 @@ class Server:
 
     Stage 3:
     client data format:
-        [game_id, client_id, client_game_state, play_again]
+        [game_id, client_id, client_game_state, play_again] 1 play again 0 not
     server data format:
         [game_id, game_state, : client_id, score, play_again | client_id, score, play_again]
     """
@@ -119,13 +120,15 @@ class Server:
                 print('msg_2', msg)
                 conn.sendall(str.encode(msg))
             elif current_game.game_state == 3:
+                print('hey')
                 if rcv_game_state == current_game.game_state:
                     print('END')
-                    play_again = True if int(client_data_arr[2]) == 1 else False
+                    print(client_data_arr)
+                    play_again = True if int(client_data_arr[3]) == 1 else False
                     recv_q.put([client_id, play_again])
-                msg = str(game_id) + str(current_game.game_state) + ":"
+                msg = str(game_id) + "," + str(current_game.game_state) + ":"
                 for key in current_game.players:
-                    msg += key + "," + current_game.players[key].score + current_game.players[key].play_again + "|"
+                    msg += str(key) + "," + str(current_game.players[key].score) + str(1 if current_game.players[key].play_again else 0) + "|"
                 msg = msg[:-1]
                 thread_event.wait()
                 conn.sendall(str.encode(msg))
@@ -206,7 +209,7 @@ class Game:
         while self.game_state == 2:
             framerate = clock.tick(30)
             self.time = int((pygame.time.get_ticks() - start_ticks) / 1000)
-            if self.time == 10:
+            if self.time == 5:
                 self.game_state = 3
             self.frame_string = ""
             for key in self.client_queues:
@@ -269,6 +272,7 @@ class Game:
             thread_event.clear()
 
         while self.game_state == 3:
+            framerate = clock.tick(30)
             for key in self.client_queues:
                 try:
                     x = self.client_queues[key].get_nowait()
@@ -281,6 +285,8 @@ class Game:
                 play_again = play_again and self.players[key].play_again
             if play_again:
                 self.game_state = 2
+            thread_event.set()
+            thread_event.clear()
 
     @staticmethod
     def move_word(w):
@@ -304,8 +310,8 @@ class Game:
             self.players[client_input[0]].word_submit = client_input[1]
             self.players[client_input[0]].action_index = client_input[2]
         elif self.game_state == 3:
-            self.players[client_input[0]].play_again = client_input[1]
-
+            if client_input[1] != ' ':
+                self.players[client_input[0]].play_again = int(client_input[1])
 
 def get_opponent(self_id):
     if self_id == 1:

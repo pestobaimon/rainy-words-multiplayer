@@ -41,7 +41,7 @@ class Game:
         self.screen = pygame.display.set_mode((self.width, self.height))
         self.keys_to_play = []
         self.word_to_play_mem = []
-        pygame.display.set_caption('client1')
+        pygame.display.set_caption('client2')
 
         # game system
         self.submit_queue = Queue()
@@ -52,6 +52,8 @@ class Game:
         self.game_state = 0
         self.game_id = ''
         self.time = 0
+        self.play_again_me = 0
+        self.play_again_friend = 0
 
     def insert_name(self):
         type_state = False
@@ -63,7 +65,8 @@ class Game:
             keys = pygame.key.get_pressed()
             self.screen.fill(pygame.Color('white'))
             self.screen.blit(pygame.transform.scale(bg_sprite[3], (self.width, self.height)), (0, 0))
-            if keys[pygame.K_BACKSPACE] and len(self.player_me.keystrokes) > 0 and backspace_clock.time >= 2 and type_state:
+            if keys[pygame.K_BACKSPACE] and len(
+                    self.player_me.keystrokes) > 0 and backspace_clock.time >= 2 and type_state:
                 backspace_clock.reset()
                 self.player_me.keystrokes = self.player_me.keystrokes[:-1]
             for event in pygame.event.get():
@@ -131,6 +134,7 @@ class Game:
             print('data', data)
             self.game_id = int(data[0])
             self.game_state = int(data[1])
+            print(data)
             if self.game_state == 2:
                 break
             self.player_friend.name = data[3]
@@ -139,7 +143,7 @@ class Game:
             self.screen.blit(pygame.transform.rotate(pygame.transform.scale(bongo_sprite[1], (1024, 1024)), 12.5),
                              (-40, 40))
             self.draw_countdown_timer(data[2])
-            if data[1] == '2':
+            if data[2] == '2':
                 self.screen.blit(pygame.transform.rotate(pygame.transform.scale(bongo_sprite[1], (1024, 1024)), 12.5),
                                  (-40, 40))  # mid bottom
                 self.screen.blit(pygame.transform.rotate(pygame.transform.scale(bongo_sprite[1], (1024, 1024)), 192.5),
@@ -148,7 +152,7 @@ class Game:
                                  (350, -300))  # right
                 self.screen.blit(pygame.transform.rotate(pygame.transform.scale(bongo_sprite[1], (1024, 1024)), -80),
                                  (-550, -180))  # left
-            if data[1] == '1':
+            if data[2] == '1':
                 self.screen.blit(pygame.transform.rotate(pygame.transform.scale(bongo_sprite[1], (1024, 1024)), 12.5),
                                  (-40, 40))  # mid bottom
                 self.screen.blit(pygame.transform.rotate(pygame.transform.scale(bongo_sprite[1], (1024, 1024)), 192.5),
@@ -165,7 +169,7 @@ class Game:
                                  (350, -500))  # top right
                 self.screen.blit(pygame.transform.rotate(pygame.transform.scale(bongo_sprite[1], (1024, 1024)), 205.5),
                                  (-620, -610))  # top left
-            self.draw_text('Your Opponent is--- Meow '+self.player_friend.name+'!', 0, 0, 60, 255, 255, 255)
+            self.draw_text('Your Opponent is--- Meow ' + self.player_friend.name + '!', 0, 0, 60, 255, 255, 255)
             self.draw_text('Lobby ID: ' + str(self.game_id), 0, 0, 40, 255, 255, 255)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -182,10 +186,10 @@ class Game:
             framerate = self.clock.tick(30)
             backspace_clock.tick()
             keys = pygame.key.get_pressed()
-
             game_data, player_dict, word_dict = self.parse_data(self.current_frame_string)
             self.sync_data(game_data, player_dict, word_dict)
-
+            if self.game_state == 3:
+                break
             # redraw per frame
             self.draw_state_me = 0
             self.screen.fill(pygame.Color('white'))
@@ -236,7 +240,6 @@ class Game:
                     self.word_mem[word_id].unmatch_text()
                     self.print_move_word(self.word_mem[word_id])
                 else:
-                    #print('print word')
                     self.print_move_word(self.word_mem[word_id])
             for word in self.word_to_play_mem:
                 word_removed = [self.word_to_play_mem[word], 0]
@@ -247,41 +250,171 @@ class Game:
                     word[1] = 0
                     removed_word_animation.remove(word)
                 word[1] += 1
-            #print(self.current_frame_string)
+            # print(self.current_frame_string)
             if self.player_me.confirm_key:
                 self.current_frame_string = self.send_data(self.player_me.keystrokes + "," + str(self.draw_state_me))
                 self.player_me.keystrokes = ''
                 self.player_me.confirm_key = False
             else:
                 self.current_frame_string = self.send_data(" ," + str(self.draw_state_me))
-
+            print(self.current_frame_string)
             pygame.display.update()
+
+        print("out while")
+        self.result()
+
+    def result(self):
+        score_me = self.player_me.score  # A is me
+        score_friend = self.player_friend.score  # B is friend
+        if score_me < score_friend:
+            while self.game_state == 3:
+                game_data, player_dict = self.parse_data(self.current_frame_string)
+                self.sync_data_state3(game_data, player_dict)
+                self.screen.fill(pygame.Color('white'))
+                self.screen.blit(pygame.transform.scale(bg_sprite[7], (self.width, self.height)), (0, 0))
+                self.screen.blit(pygame.transform.rotate(pygame.transform.scale(bg_sprite[8], (600, 200)), 0),
+                                 (200, 50))
+                self.screen.blit(pygame.transform.rotate(pygame.transform.scale(bongo_sprite[9], (500, 250)), 0),
+                                 (300, 480))
+                self.draw_text_result('YOU LOSE', 650, 120)
+                self.draw_text_result('SCORE: ' + str(self.player_me.score), 645, 300)
+                self.screen.blit(pygame.transform.rotate(pygame.transform.scale(button_sprite[1], (280, 98)), 0),
+                                 (190, 400))
+                self.screen.blit(pygame.transform.rotate(pygame.transform.scale(button_sprite[2], (350, 130)), 0),
+                                 (530, 390))
+
+                for event in pygame.event.get():  # ดูว่าเกิดeventอะไรขึ้น
+                    if event.type == pygame.QUIT:  # type คือการกดคีย์บอร์ด #quit is press on esc
+                        pygame.quit()
+                        quit()
+                    if event.type == pygame.MOUSEBUTTONDOWN:  # mouse button down is press on mouse
+                        if 190 <= mouse_pos1[0] <= 470 and 400 <= mouse_pos1[1] <= 498:
+                            print('replay button clicked!')
+                            self.current_frame_string = self.send_data("1")
+                            self.play_again_me = 1
+                        elif 530 <= mouse_pos1[0] <= 880 and 390 <= mouse_pos1[1] <= 520:
+                            print('exit button clicked!')
+                            self.current_frame_string = self.send_data("0")
+                            pygame.quit()
+                            quit()
+                mouse_pos1 = pygame.mouse.get_pos()  # get tuple (x,y) want x ---> mouse_pos[0]
+                pygame.display.update()
+        if score_me > score_friend:
+            while self.game_state == 3:
+                game_data, player_dict = self.parse_data(self.current_frame_string)
+                self.sync_data_state3(game_data, player_dict)
+                self.screen.fill(pygame.Color('white'))
+                self.screen.blit(pygame.transform.scale(bg_sprite[10], (self.width, self.height)), (0, 0))
+                self.screen.blit(pygame.transform.rotate(pygame.transform.scale(bg_sprite[11], (390, 200)), 0),
+                                 (325, 50))
+                self.screen.blit(pygame.transform.rotate(pygame.transform.scale(bongo_sprite[0], (700, 700)), 13),
+                                 (165, 242))
+                self.draw_text_result('YOU WIN', 655, 120)
+                self.draw_text_result('SCORE: ' + str(self.player_me.score), 645, 300)
+                self.screen.blit(pygame.transform.rotate(pygame.transform.scale(button_sprite[1], (280, 98)), 0),
+                                 (190, 400))
+                self.screen.blit(pygame.transform.rotate(pygame.transform.scale(button_sprite[2], (350, 130)), 0),
+                                 (530, 390))
+
+                for event in pygame.event.get():  # ดูว่าเกิดeventอะไรขึ้น
+                    if event.type == pygame.QUIT:  # type คือการกดคีย์บอร์ด #quit is press on esc
+                        pygame.quit()
+                        quit()
+                    if event.type == pygame.MOUSEBUTTONDOWN:  # mouse button down is press on mouse
+                        if 190 <= mouse_pos1[0] <= 470 and 400 <= mouse_pos1[1] <= 498:
+                            print('replay button clicked!')
+                            self.current_frame_string = self.send_data("1")
+                            self.play_again_me = 1
+                        elif 530 <= mouse_pos1[0] <= 880 and 390 <= mouse_pos1[1] <= 520:
+                            print('exit button clicked!')
+                            self.current_frame_string = self.send_data("0")
+                            pygame.quit()
+                            quit()
+
+                mouse_pos1 = pygame.mouse.get_pos()  # get tuple (x,y) want x ---> mouse_pos[0]
+                pygame.display.update()
+
+        if score_me == score_friend:
+            while self.game_state == 3:
+                game_data, player_dict = self.parse_data(self.current_frame_string)
+                self.sync_data_state3(game_data, player_dict)
+                self.screen.fill(pygame.Color('white'))
+                self.screen.blit(pygame.transform.scale(bg_sprite[12], (self.width, self.height)), (0, 0))
+                self.screen.blit(pygame.transform.rotate(pygame.transform.scale(bg_sprite[13], (500, 200)), 0),
+                                 (255, 50))
+                self.draw_text_result('DRAW', 610, 120)
+                self.draw_text_result('SCORE: ' + str(self.player_me.score), 645, 300)
+                self.screen.blit(pygame.transform.rotate(pygame.transform.scale(button_sprite[1], (280, 98)), 0),
+                                 (190, 400))
+                self.screen.blit(pygame.transform.rotate(pygame.transform.scale(button_sprite[2], (350, 130)), 0),
+                                 (530, 390))
+
+                for event in pygame.event.get():  # ดูว่าเกิดeventอะไรขึ้น
+                    if event.type == pygame.QUIT:  # type คือการกดคีย์บอร์ด #quit is press on esc
+                        pygame.quit()
+                        quit()
+                    if event.type == pygame.MOUSEBUTTONDOWN:  # mouse button down is press on mouse
+                        if 190 <= mouse_pos1[0] <= 470 and 400 <= mouse_pos1[1] <= 498:
+                            print('replay button clicked!')
+                            self.current_frame_string = self.send_data("1")
+                            self.play_again_me = 1
+                        elif 530 <= mouse_pos1[0] <= 880 and 390 <= mouse_pos1[1] <= 520:
+                            print('exit button clicked!')
+                            self.current_frame_string = self.send_data("0")
+                            pygame.quit()
+                            quit()
+
+                mouse_pos1 = pygame.mouse.get_pos()  # get tuple (x,y) want x ---> mouse_pos[0]
+                pygame.display.update()
+
+        if self.play_again_me == 1 and self.play_again_friend == 1:
+            self.count_down()
 
     def send_data(self, msg):
         data = str(self.net.game_id) + "," + str(self.net.id) + "," + str(self.game_state) + "," + str(msg)
         reply = self.net.send(data)
         return reply
 
-    @staticmethod
-    def parse_data(data):
-        try:
-            game_data, player_data, word_data = data.split(":")[0].split(","), data.split(":")[1], data.split(":")[2]
-            player_list = player_data.split("|")
-            word_list = word_data.split("|")
-            player_dict = {}
-            word_dict = {}
-            for player_string in player_list:
-                player = player_string.split(",")
-                player_dict[player[0]] = player[1:]
-            for word_string in word_list:
-                word_separated_data = word_string.split(",")
-                word_dict[word_separated_data[0]] = word_separated_data
-            return game_data, player_dict, word_dict
-        except:
-            return [], {}, {}
+    def parse_data(self, data):
+        if self.game_state == 2:
+            try:
+                game_data, player_data, word_data = data.split(":")[0].split(","), data.split(":")[1], data.split(":")[
+                    2]
+                player_list = player_data.split("|")
+                word_list = word_data.split("|")
+                player_dict = {}
+                word_dict = {}
+                for player_string in player_list:
+                    player = player_string.split(",")
+                    player_dict[player[0]] = player[1:]
+                for word_string in word_list:
+                    word_separated_data = word_string.split(",")
+                    word_dict[word_separated_data[0]] = word_separated_data
+                return game_data, player_dict, word_dict
+            except:
+                return [], {}, {}
+        elif self.game_state == 3:
+            try:
+                game_data, player_data = data.split(":")[0].split(","), data.split(":")[1]
+                player_list = player_data.split("|")
+                player_dict = {}
+                for player_string in player_list:
+                    player = player_string.split(",")
+                    player_dict[player[0]] = player[1:]
+                return game_data, player_dict
+            except:
+                return [], {}, {}
+
+    def sync_data_state3(self, game_data_list, player_data_dict):
+        if len(game_data_list) > 0:
+            self.game_state = int(game_data_list[1])
+            self.play_again_friend = int(game_data_list[3])
+        for player_id in player_data_dict:
+            self.player_dict[player_id].score = player_data_dict[player_id][0]
 
     def sync_data(self, game_data_list, player_data_dict, word_data_dict):
         if len(game_data_list) > 0:
+            self.game_state = int(game_data_list[1])
             self.draw_state_friend = int(game_data_list[2])
             self.time = int(game_data_list[3])
             print(self.time)
@@ -302,8 +435,6 @@ class Game:
         self.word_to_play_mem = {k: v for k, v in self.word_mem.items() if k in keys_to_play}
         self.word_mem = {k: v for k, v in self.word_mem.items() if k in keys_to_keep}
 
-
-
     def draw_text(self, text, xpos, ypos, font_size, r, g, b):
         font = pygame.font.Font('Assets/font/pixelart.ttf', font_size)
         text_show = font.render(str(text), True, (r, g, b))
@@ -321,7 +452,8 @@ class Game:
         if user == 0:  # draw me
             self.screen.blit(pygame.transform.scale(png, (300, 300)), (self.player_x_me, self.player_y_me))
         if user == 1:  # draw friend
-            self.screen.blit(pygame.transform.flip(pygame.transform.scale(png, (300, 300)), True, False), (self.player_x_friend, self.player_y_friend))
+            self.screen.blit(pygame.transform.flip(pygame.transform.scale(png, (300, 300)), True, False),
+                             (self.player_x_friend, self.player_y_friend))
 
     def bongo_animation(self, bongo_state, event):  # bongo state which folder (me or friend)
         if event.type == pygame.KEYDOWN:
@@ -341,18 +473,18 @@ class Game:
         self.draw_bongo_cat(bongo_state[self.draw_state_friend], 1)
 
     def display_VFX(self, w, frame):
-        self.screen.blit(pygame.transform.scale(self.vfx_boom[frame], (200, 200)), (w.x_pos-50, w.y_pos-60))
+        self.screen.blit(pygame.transform.scale(self.vfx_boom[frame], (200, 200)), (w.x_pos - 50, w.y_pos - 60))
 
     def draw_text_waiting(self, text, xpos, ypos):
         font = pygame.font.Font("Assets/font/pixelart.ttf", 35)
-        #font = pygame.font.Font("pixelfont", 40, bold = True)
+        # font = pygame.font.Font("pixelfont", 40, bold = True)
         text_a = font.render(text, True, pygame.Color(102, 0, 102))
 
         text_a_rect = text_a.get_rect()
         text_a_rect.topleft = (xpos, ypos)
         self.screen.blit(text_a, text_a_rect)
 
-    def draw_timer(self,time):
+    def draw_timer(self, time):
         time_text = self.font.render(str(time), True, pygame.Color('black'))
         time_text_rect = time_text.get_rect()
         time_text_rect.topright = (1010, 10)
@@ -403,6 +535,13 @@ class Game:
         text_rect = text.get_rect()
         text_rect.center = (int(self.width / 2), int(self.height / 2))
         self.screen.blit(text, text_rect)
+
+    def draw_text_result(self, text, xpos, ypos):
+        font = pygame.font.Font("Assets/font/pixelart.ttf", 50)
+        text_a = font.render(text, True, pygame.Color(255, 255, 255))
+        text_a_rect = text_a.get_rect()
+        text_a_rect.topright = (xpos, ypos)
+        self.screen.blit(text_a, text_a_rect)
 
     def print_move_word(self, w):
         self.screen.blit(w.text, w.text_rect)
