@@ -28,7 +28,7 @@ class Player:
 class Server:
     HEADER = 64
     PORT = 5050
-    SERVER = "192.168.1.13"
+    SERVER = "192.168.1.37"
     ADDR = (SERVER, PORT)
     FORMAT = 'utf-8'
     DISCONNECT_MESSAGE = "!DISCONNECT"
@@ -66,6 +66,9 @@ class Server:
         [game_id, client_id, client_game_state, play_again] 1 play again 0 not
     server data format:
         [game_id, game_state, : client_id, score, play_again | client_id, score, play_again]
+    
+    Restart Message:
+        [game_id, restart, : client_id, score, play_again | client_id, score, play_again]
     """
 
     def handle_client(self, conn, addr, client_id, game_id):
@@ -120,16 +123,22 @@ class Server:
                 print('msg_2', msg)
                 conn.sendall(str.encode(msg))
             elif current_game.game_state == 3:
-                print('hey')
                 if rcv_game_state == current_game.game_state:
                     print('END')
                     print(client_data_arr)
                     play_again = True if int(client_data_arr[3]) == 1 else False
                     recv_q.put([client_id, play_again])
-                msg = str(game_id) + "," + str(current_game.game_state) + ":"
-                for key in current_game.players:
-                    msg += str(key) + "," + str(current_game.players[key].score) + str(1 if current_game.players[key].play_again else 0) + "|"
-                msg = msg[:-1]
+                if current_game.play_again:
+                    msg = str(game_id) + "," + "restart" + ":"
+                    for key in current_game.players:
+                        msg += str(key) + "," + str(current_game.players[key].score) + "," + str(
+                            1 if current_game.players[key].play_again else 0) + "|"
+                    msg = msg[:-1]
+                else:
+                    msg = str(game_id) + "," + str(current_game.game_state) + ":"
+                    for key in current_game.players:
+                        msg += str(key) + "," + str(current_game.players[key].score) + "," + str(1 if current_game.players[key].play_again else 0) + "|"
+                    msg = msg[:-1]
                 thread_event.wait()
                 conn.sendall(str.encode(msg))
 
@@ -173,120 +182,123 @@ class Game:
         self.players = players
         self.time = 0
         self.client_queues = {}
+        self.play_again = False
 
     def run_game_room(self):
         clock = pygame.time.Clock()
+        running = True
+        while running:
+            while self.game_state == 0:
+                all_ready = True
+                if len(self.players) == 2:
+                    for key in self.players:
+                        all_ready = all_ready and self.players[key].ready
+                    if all_ready:
+                        self.game_state = 1
 
-        while self.game_state == 0:
-            all_ready = True
-            if len(self.players) == 2:
-                for key in self.players:
-                    all_ready = all_ready and self.players[key].ready
-                if all_ready:
-                    self.game_state = 1
+            start_ticks = pygame.time.get_ticks()
+            while self.game_state == 1:
+                framerate = clock.tick(30)
+                seconds = int((pygame.time.get_ticks() - start_ticks) / 1000)
+                if seconds == 0:
+                    self.countdown = "3"
+                elif seconds == 1:
+                    self.countdown = "2"
+                elif seconds == 2:
+                    self.countdown = "1"
+                else:
+                    self.game_state = 2
+                    print('gamestate = 2')
+                thread_event.set()
+                thread_event.clear()
 
-        start_ticks = pygame.time.get_ticks()
-        while self.game_state == 1:
-            framerate = clock.tick(30)
-            seconds = int((pygame.time.get_ticks() - start_ticks) / 1000)
-            if seconds == 0:
-                self.countdown = "3"
-            elif seconds == 1:
-                self.countdown = "2"
-            elif seconds == 2:
-                self.countdown = "1"
-            else:
-                self.game_state = 2
-                print('gamestate = 2')
-            thread_event.set()
-            thread_event.clear()
+            word_mem = []
 
-        word_mem = []
+            timer = Timer()
+            start_ticks = pygame.time.get_ticks()
 
-        timer = Timer()
-        start_ticks = pygame.time.get_ticks()
+            while self.game_state == 2:
+                framerate = clock.tick(30)
+                self.time = int((pygame.time.get_ticks() - start_ticks) / 1000)
+                if self.time == 5:
+                    self.game_state = 3
+                self.frame_string = ""
+                for key in self.client_queues:
+                    try:
+                        x = self.client_queues[key].get_nowait()
+                        self.sync_data(x)
+                        print(x)
+                    except Empty as e:
+                        pass
 
-        while self.game_state == 2:
-            framerate = clock.tick(30)
-            self.time = int((pygame.time.get_ticks() - start_ticks) / 1000)
-            if self.time == 5:
-                self.game_state = 3
-            self.frame_string = ""
-            for key in self.client_queues:
-                try:
-                    x = self.client_queues[key].get_nowait()
-                    self.sync_data(x)
-                    print(x)
-                except Empty as e:
-                    pass
+                if len(word_mem) <= 1:
+                    timer.tick()
+                if timer.time >= 90:
+                    timer.reset()
 
-            if len(word_mem) <= 1:
-                timer.tick()
-            if timer.time >= 90:
-                timer.reset()
+                if len(word_mem) <= 1:
+                    timer.tick()
+                if 2 == random.randint(1, 60):
+                    self.add_new_word(word_mem)
+                if len(word_mem) <= 1 and timer.time >= 90:
+                    self.add_new_word(word_mem)
+                    timer.reset()
 
-            if len(word_mem) <= 1:
-                timer.tick()
-            if 2 == random.randint(1, 60):
-                self.add_new_word(word_mem)
-            if len(word_mem) <= 1 and timer.time >= 90:
-                self.add_new_word(word_mem)
-                timer.reset()
+                removed_words = []
 
-            removed_words = []
+                for word in word_mem:
+                    if not word.disabled:
+                        self.move_word(word)
+                        if word.text_rect.bottomleft[1] > 730:
+                            word.disable()
+                            removed_words.append(word)
 
-            for word in word_mem:
-                if not word.disabled:
-                    self.move_word(word)
-                    if word.text_rect.bottomleft[1] > 730:
-                        word.disable()
+                        for client_id in self.players:
+                            if self.players[client_id].word_submit != " ":
+                                if (self.players[client_id].word_submit == word.word) and (not word.disabled):
+                                    self.players[client_id].score += 1
+                                    print('plus')
+                                    word.disable()
+                                    removed_words.append(word)
+                                else:
+                                    print(self.players[client_id].word_submit + "!=" + word.word)
+                    else:
                         removed_words.append(word)
 
-                    for client_id in self.players:
-                        if self.players[client_id].word_submit != " ":
-                            if (self.players[client_id].word_submit == word.word) and (not word.disabled):
-                                self.players[client_id].score += 1
-                                print('plus')
-                                word.disable()
-                                removed_words.append(word)
-                            else:
-                                print(self.players[client_id].word_submit + "!=" + word.word)
-                else:
-                    removed_words.append(word)
+                for client_id in self.players:
+                    self.players[client_id].word_submit = " "
 
-            for client_id in self.players:
-                self.players[client_id].word_submit = " "
+                if len(removed_words) > 0:
+                    word_mem = [i for i in word_mem if i not in removed_words]
+                for key in self.players:
+                    client_string = str(key) + "," + str(self.players[key].score) + "|"
+                    self.frame_string += client_string
+                self.frame_string = self.frame_string[:-1] + ":"
+                for word in word_mem:
+                    word_string = str(word.id) + "," + str(word.word_code) + "," + str(word.fall_speed) + "," + str(
+                        word.text_rect.topleft[0]) + "," + str(word.text_rect.topleft[1]) + "|"
+                    self.frame_string += word_string
+                self.frame_string = self.frame_string[:-1]
+                thread_event.set()
+                thread_event.clear()
 
-            if len(removed_words) > 0:
-                word_mem = [i for i in word_mem if i not in removed_words]
-            for key in self.players:
-                client_string = str(key) + "," + str(self.players[key].score) + "|"
-                self.frame_string += client_string
-            self.frame_string = self.frame_string[:-1] + ":"
-            for word in word_mem:
-                word_string = str(word.id) + "," + str(word.word_code) + "," + str(word.fall_speed) + "," + str(
-                    word.text_rect.topleft[0]) + "," + str(word.text_rect.topleft[1]) + "|"
-                self.frame_string += word_string
-            self.frame_string = self.frame_string[:-1]
-            thread_event.set()
-            thread_event.clear()
+            while self.game_state == 3:
+                framerate = clock.tick(30)
+                for key in self.client_queues:
+                    try:
+                        x = self.client_queues[key].get_nowait()
+                        self.sync_data(x)
+                        print(x)
+                    except Empty as e:
+                        pass
+                self.play_again = True
+                for key in self.players:
+                    self.play_again = self.play_again and self.players[key].play_again
+                if self.play_again:
+                    self.game_state = 1
+                thread_event.set()
+                thread_event.clear()
 
-        while self.game_state == 3:
-            framerate = clock.tick(30)
-            for key in self.client_queues:
-                try:
-                    x = self.client_queues[key].get_nowait()
-                    self.sync_data(x)
-                    print(x)
-                except Empty as e:
-                    pass
-            play_again = False
-            for key in self.players:
-                play_again = play_again and self.players[key].play_again
-            if play_again:
-                self.game_state = 2
-            thread_event.set()
-            thread_event.clear()
 
     @staticmethod
     def move_word(w):
@@ -312,6 +324,7 @@ class Game:
         elif self.game_state == 3:
             if client_input[1] != ' ':
                 self.players[client_input[0]].play_again = int(client_input[1])
+
 
 def get_opponent(self_id):
     if self_id == 1:

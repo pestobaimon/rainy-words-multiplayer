@@ -41,7 +41,7 @@ class Game:
         self.screen = pygame.display.set_mode((self.width, self.height))
         self.keys_to_play = []
         self.word_to_play_mem = []
-        pygame.display.set_caption('client2')
+        pygame.display.set_caption('client1')
 
         # game system
         self.submit_queue = Queue()
@@ -53,7 +53,6 @@ class Game:
         self.game_id = ''
         self.time = 0
         self.play_again_me = 0
-        self.play_again_friend = 0
 
     def insert_name(self):
         type_state = False
@@ -130,11 +129,13 @@ class Game:
 
     def count_down(self):
         while self.game_state == 1:
+            framerate = self.clock.tick(30)
             data = self.send_data('').split(',')
-            print('data', data)
-            self.game_id = int(data[0])
-            self.game_state = int(data[1])
-            print(data)
+            if data[1] != 'restart:0':
+                print('data', data)
+                self.game_id = int(data[0])
+                self.game_state = int(data[1])
+                print(data)
             if self.game_state == 2:
                 break
             self.player_friend.name = data[3]
@@ -268,6 +269,8 @@ class Game:
         score_friend = self.player_friend.score  # B is friend
         if score_me < score_friend:
             while self.game_state == 3:
+                framerate = self.clock.tick(30)
+                self.current_frame_string = self.send_data(str(self.play_again_me))
                 game_data, player_dict = self.parse_data(self.current_frame_string)
                 self.sync_data_state3(game_data, player_dict)
                 self.screen.fill(pygame.Color('white'))
@@ -290,17 +293,21 @@ class Game:
                     if event.type == pygame.MOUSEBUTTONDOWN:  # mouse button down is press on mouse
                         if 190 <= mouse_pos1[0] <= 470 and 400 <= mouse_pos1[1] <= 498:
                             print('replay button clicked!')
-                            self.current_frame_string = self.send_data("1")
                             self.play_again_me = 1
+                            self.current_frame_string = self.send_data(str(self.play_again_me))
                         elif 530 <= mouse_pos1[0] <= 880 and 390 <= mouse_pos1[1] <= 520:
                             print('exit button clicked!')
-                            self.current_frame_string = self.send_data("0")
+                            self.play_again_me = 0
+                            self.current_frame_string = self.send_data(str(self.play_again_me))
                             pygame.quit()
                             quit()
                 mouse_pos1 = pygame.mouse.get_pos()  # get tuple (x,y) want x ---> mouse_pos[0]
                 pygame.display.update()
+
         if score_me > score_friend:
             while self.game_state == 3:
+                framerate = self.clock.tick(30)
+                self.current_frame_string = self.send_data(str(self.play_again_me))
                 game_data, player_dict = self.parse_data(self.current_frame_string)
                 self.sync_data_state3(game_data, player_dict)
                 self.screen.fill(pygame.Color('white'))
@@ -323,11 +330,12 @@ class Game:
                     if event.type == pygame.MOUSEBUTTONDOWN:  # mouse button down is press on mouse
                         if 190 <= mouse_pos1[0] <= 470 and 400 <= mouse_pos1[1] <= 498:
                             print('replay button clicked!')
-                            self.current_frame_string = self.send_data("1")
                             self.play_again_me = 1
+                            self.current_frame_string = self.send_data(str(self.play_again_me))
                         elif 530 <= mouse_pos1[0] <= 880 and 390 <= mouse_pos1[1] <= 520:
                             print('exit button clicked!')
-                            self.current_frame_string = self.send_data("0")
+                            self.play_again_me = 0
+                            self.current_frame_string = self.send_data(str(self.play_again_me))
                             pygame.quit()
                             quit()
 
@@ -336,6 +344,8 @@ class Game:
 
         if score_me == score_friend:
             while self.game_state == 3:
+                framerate = self.clock.tick(30)
+                self.current_frame_string = self.send_data(str(self.play_again_me))
                 game_data, player_dict = self.parse_data(self.current_frame_string)
                 self.sync_data_state3(game_data, player_dict)
                 self.screen.fill(pygame.Color('white'))
@@ -356,23 +366,25 @@ class Game:
                     if event.type == pygame.MOUSEBUTTONDOWN:  # mouse button down is press on mouse
                         if 190 <= mouse_pos1[0] <= 470 and 400 <= mouse_pos1[1] <= 498:
                             print('replay button clicked!')
-                            self.current_frame_string = self.send_data("1")
                             self.play_again_me = 1
+                            self.current_frame_string = self.send_data(str(self.play_again_me))
                         elif 530 <= mouse_pos1[0] <= 880 and 390 <= mouse_pos1[1] <= 520:
                             print('exit button clicked!')
-                            self.current_frame_string = self.send_data("0")
+                            self.play_again_me = 0
+                            self.current_frame_string = self.send_data(str(self.play_again_me))
                             pygame.quit()
                             quit()
 
                 mouse_pos1 = pygame.mouse.get_pos()  # get tuple (x,y) want x ---> mouse_pos[0]
                 pygame.display.update()
 
-        if self.play_again_me == 1 and self.play_again_friend == 1:
+        if self.game_state == 1:
             self.count_down()
 
     def send_data(self, msg):
         data = str(self.net.game_id) + "," + str(self.net.id) + "," + str(self.game_state) + "," + str(msg)
         reply = self.net.send(data)
+        print(reply)
         return reply
 
     def parse_data(self, data):
@@ -403,14 +415,19 @@ class Game:
                     player_dict[player[0]] = player[1:]
                 return game_data, player_dict
             except:
-                return [], {}, {}
+                return [], {}
 
     def sync_data_state3(self, game_data_list, player_data_dict):
         if len(game_data_list) > 0:
-            self.game_state = int(game_data_list[1])
-            self.play_again_friend = int(game_data_list[3])
+            if game_data_list[1] == 'restart':
+                self.game_state = 1
+                return 'restart'
+            else:
+                self.game_state = int(game_data_list[1])
         for player_id in player_data_dict:
             self.player_dict[player_id].score = player_data_dict[player_id][0]
+            self.player_dict[player_id].play_again = player_data_dict[player_id][1]
+        return 'continue'
 
     def sync_data(self, game_data_list, player_data_dict, word_data_dict):
         if len(game_data_list) > 0:
