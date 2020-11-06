@@ -7,6 +7,7 @@ from words_client import Word
 from png_sprite import *
 import pygame
 
+
 class Game:
 
     def __init__(self):
@@ -49,7 +50,7 @@ class Game:
         self.game_state = 0
         self.game_id = ''
         self.game_time = 0
-        self.count_down_time = 0
+        self.count_down_time = '0'
         self.play_again_me = 0
         self.removed_word_animation = []
         self.backspace_clock = Timer()
@@ -58,18 +59,20 @@ class Game:
         self.lobby_count = 0
         self.msg = ''
 
-    def start_game(self):
+    def start(self):
         playing = True
         self.insert_name()
         self.current_frame_string = self.send_data(self.player_me.name)
-        print('hey')
         while playing:
             framerate = self.clock.tick(30)
-            self.sync_data(self.parse_data(self.current_frame_string))
+            game_data_list, player_dict, word_dict = self.parse_data(self.current_frame_string)
+            print('current frame string', self.current_frame_string)
+            self.sync_data(game_data_list, player_dict, word_dict)
             self.run_lobby() #gamestate 0
             self.count_down() #gamestate 1
             self.start_game() #gamestate 2
             self.result() #gamestate 3
+            print('play again', self.play_again_me)
             self.current_frame_string = self.send_data(self.msg)
 
     def insert_name(self):
@@ -121,6 +124,7 @@ class Game:
 
     def run_lobby(self):
         if self.game_state == 0:
+            self.msg = self.player_me.name
             self.screen.fill(pygame.Color('white'))
             self.screen.blit(pygame.transform.scale(bg_sprite[5], (self.width, self.height)), (0, 0))
             self.screen.blit(pygame.transform.rotate(pygame.transform.scale(bg_sprite[4], (750, 400)), 0), (40, 50))
@@ -140,6 +144,7 @@ class Game:
 
     def count_down(self):
         if self.game_state == 1:
+            self.play_again_me = 0
             self.screen.fill(pygame.Color('white'))
             self.screen.blit(pygame.transform.scale(bg_sprite[2], (self.width, self.height)), (0, 0))
             self.screen.blit(pygame.transform.rotate(pygame.transform.scale(bongo_sprite[1], (1024, 1024)), 12.5),
@@ -250,11 +255,11 @@ class Game:
                 self.player_me.confirm_key = False
             else:
                 self.msg = " ," + str(self.draw_state_me)
-            print(self.current_frame_string)
             pygame.display.update()
 
     def result(self):
         if self.game_state == 3:
+            self.msg = str(self.play_again_me)
             score_me = self.player_me.score  # A is me
             score_friend = self.player_friend.score  # B is friend
             mouse_pos1 = pygame.mouse.get_pos()  # get tuple (x,y) want x ---> mouse_pos[0]
@@ -272,7 +277,7 @@ class Game:
                 self.screen.blit(pygame.transform.rotate(pygame.transform.scale(button_sprite[2], (350, 130)), 0),
                                  (530, 390))
 
-                for event in pygame.event.get():  # ดูว่าเกิดeventอะไรขึ้น
+                for event in pygame.event.get():  # ดูว่าเกิด event อะไรขึ้น
                     if event.type == pygame.QUIT:  # type คือการกดคีย์บอร์ด #quit is press on esc
                         pygame.quit()
                         quit()
@@ -349,23 +354,37 @@ class Game:
             pygame.display.update()
 
     def send_data(self, msg):
+        print('msg', msg)
         data = str(self.net.game_id) + "," + str(self.net.id) + "," + str(self.game_state) + "," + str(msg)
+        print('sent', data)
         reply = self.net.send(data)
-        print(reply)
+        print('reply', reply)
         return reply
 
-    def parse_data(self, data):
-        if self.game_state == 2:
-            data_split = data.split(":")[0]
-            game_data, player_data, word_data = '', '', ''
-            if len(data_split) == 1:
-                game_data = data.split(":")[0]
-            elif len(data_split) == 2:
-                game_data, player_data = data.split(":")[0].split(","), data.split(":")[1]
-            elif len(data_split) == 3:
-                game_data, player_data, word_data = data.split(":")[0].split(","), data.split(":")[1], data.split(":")[2]
+    @staticmethod
+    def parse_data(data):
+        data_split = data.split(":")
+        game_data, player_data, word_data = [], '', ''
+        if len(data_split) == 1:
+            game_data = data.split(":")[0].split(",")
+            return game_data, {}, {}
+
+        elif len(data_split) == 2:
+            game_data, player_data = data.split(":")[0].split(","), data.split(":")[1]
             player_list = player_data.split("|")
-            word_list = word_data.split("|")
+            player_dict = {}
+            for player_string in player_list:
+                player = player_string.split(",")
+                player_dict[player[0]] = player[1:]
+            return game_data, player_dict, {}
+
+        elif len(data_split) == 3:
+            game_data, player_data, word_data = data.split(":")[0].split(","), data.split(":")[1], data.split(":")[2]
+            player_list = player_data.split("|")
+            if len(word_data) > 0:
+                word_list = word_data.split("|")
+            else:
+                word_list = []
             player_dict = {}
             word_dict = {}
             for player_string in player_list:
@@ -374,19 +393,17 @@ class Game:
             for word_string in word_list:
                 word_separated_data = word_string.split(",")
                 word_dict[word_separated_data[0]] = word_separated_data
+            print('gamedata;', game_data, 'player_dict:', player_dict, 'word_dict:', word_dict)
             return game_data, player_dict, word_dict
 
     def sync_data(self, game_data_list, player_data_dict, word_data_dict):
-        if game_data_list[1] == 'restart':
-            self.game_state = 1
-            return 'restart'
+        print('game_data_list',game_data_list)
         self.game_state = int(game_data_list[1])
-
         if self.game_state == 0:
             self.lobby_count = int(game_data_list[2])
 
         elif self.game_state == 1:
-            self.count_down_time = int(game_data_list[2])
+            self.count_down_time = game_data_list[2]
             self.player_friend.name = game_data_list[3]
 
         elif self.game_state == 2:
