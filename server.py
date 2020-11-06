@@ -88,6 +88,7 @@ class Server:
                 conn.sendall(str.encode("Receiving data empty. Disconnecting"))
                 print(f'disconnected from {addr} ')
                 break
+            print('reply', reply)
             client_data_arr = reply.split(",")
             rcv_game_id = int(client_data_arr[0])
             rcv_id = int(client_data_arr[1])
@@ -126,7 +127,6 @@ class Server:
                 elif current_game.game_state == 3:
                     if rcv_game_state == current_game.game_state:
                         print('END')
-                        print(client_data_arr)
                         play_again = True if int(client_data_arr[3]) == 1 else False
                         recv_q.put([client_id, play_again])
                     if current_game.play_again:
@@ -189,27 +189,22 @@ class Game:
         running = True
         while running:
             while self.game_state == 0:
-                    all_ready = True
-                    if len(self.players) == 2:
-                        for key in self.players:
-                            all_ready = all_ready and self.players[key].ready
-                        if all_ready:
-                            with lock:
-                                print('game room got a lock')
-                                self.game_state = 1
-                                print('game room released a lock')
+                all_ready = True
+                if len(self.players) == 2:
+                    for key in self.players:
+                        all_ready = all_ready and self.players[key].ready
+                    if all_ready:
+                        with lock:
+                            print('game room got a lock')
+                            self.game_state = 1
+                            print('game room released a lock')
 
             start_ticks = pygame.time.get_ticks()
             while self.game_state == 1:
                 framerate = clock.tick(30)
-                seconds = int((pygame.time.get_ticks() - start_ticks) / 1000)
-                if seconds == 0:
-                    self.countdown = "3"
-                elif seconds == 1:
-                    self.countdown = "2"
-                elif seconds == 2:
-                    self.countdown = "1"
-                else:
+                seconds = 10 - int((pygame.time.get_ticks() - start_ticks) / 1000)
+                self.countdown = str(seconds)
+                if seconds <= 0:
                     with lock:
                         print('game room got a lock')
                         self.game_state = 2
@@ -228,14 +223,13 @@ class Game:
                 framerate = clock.tick(30)
                 with lock:
                     self.time = int((pygame.time.get_ticks() - start_ticks) / 1000)
-                    if self.time == 10:
+                    if self.time == 60:
                         self.game_state = 3
                     frame_string = ""
                     for key in self.client_queues:
                         try:
                             x = self.client_queues[key].get_nowait()
                             self.sync_data(x)
-                            print(x)
                         except Empty as e:
                             pass
 
@@ -294,7 +288,6 @@ class Game:
                     try:
                         x = self.client_queues[key].get_nowait()
                         self.sync_data(x)
-                        print(x)
                     except Empty as e:
                         pass
                 self.play_again = True
