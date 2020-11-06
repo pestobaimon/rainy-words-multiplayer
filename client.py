@@ -62,6 +62,7 @@ class Game:
         playing = True
         self.insert_name()
         self.current_frame_string = self.send_data(self.player_me.name)
+        print('hey')
         while playing:
             framerate = self.clock.tick(30)
             self.sync_data(self.parse_data(self.current_frame_string))
@@ -77,6 +78,7 @@ class Game:
         # draw_text(self, text, xpos, ypos, font_size, r, g, b):
         while running:
             framerate = self.clock.tick(30)
+            self.mouse_pos = pygame.mouse.get_pos()
             self.backspace_clock.tick()
             keys = pygame.key.get_pressed()
             self.screen.fill(pygame.Color('white'))
@@ -110,7 +112,6 @@ class Game:
                             pass
                         else:
                             self.player_me.keystrokes += event.unicode
-            mouse_pos = pygame.mouse.get_pos()
             self.draw_text('Please insert your name', 550, 200, 40, 0, 0, 0)
             pygame.draw.rect(self.screen, (255, 255, 255), (410, 350, 200, 50))  # confirm button
             self.screen.blit(pygame.transform.scale(button_sprite[0], (600, 75)), (230, 250))  # text button texture
