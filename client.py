@@ -68,10 +68,10 @@ class Game:
             game_data_list, player_dict, word_dict = self.parse_data(self.current_frame_string)
             print('current frame string', self.current_frame_string)
             self.sync_data(game_data_list, player_dict, word_dict)
-            self.run_lobby() #gamestate 0
-            self.count_down() #gamestate 1
-            self.start_game() #gamestate 2
-            self.result() #gamestate 3
+            self.run_lobby()  # gamestate 0
+            self.count_down()  # gamestate 1
+            self.start_game()  # gamestate 2
+            self.result()  # gamestate 3
             print('play again', self.play_again_me)
             self.current_frame_string = self.send_data(self.msg)
 
@@ -147,9 +147,39 @@ class Game:
             self.play_again_me = 0
             self.screen.fill(pygame.Color('white'))
             self.screen.blit(pygame.transform.scale(bg_sprite[2], (self.width, self.height)), (0, 0))
-            self.screen.blit(pygame.transform.rotate(pygame.transform.scale(bongo_sprite[1], (1024, 1024)), 12.5),
-                             (-40, 40))
-            self.draw_countdown_timer(self.count_down_time)
+            if 5 < int(self.count_down_time) <= 10:
+                self.draw_text('ARE YOU READY?', 510, 198, 60, 255, 255, 255)
+                self.draw_text('ARE YOU READY?', 512, 200, 60, 0, 0, 0)
+                if 7 < int(self.count_down_time) <= 8:
+                    self.draw_text('Your Opponent is....', 512, 300, 50, 0, 0, 0)
+                if 5 < int(self.count_down_time) <= 7:
+                    self.draw_text('Your Opponent is....', 512, 300, 50, 0, 0, 0)
+                    self.draw_text('Meow ' + self.player_friend.name + '!', 510, 398, 70, 255, 255, 255)
+                    self.draw_text('Meow ' + self.player_friend.name + '!', 512, 400, 70, 0, 0, 0)
+                    self.screen.blit(pygame.transform.rotate(pygame.transform.scale(bongo_sprite[11], (1024, 420)), 0),
+                                     (0, 375))
+                # if self.count_down_time == '7':
+                #    self.screen.blit(pygame.transform.rotate(pygame.transform.scale(bongo_sprite[10], (400, 180)), 0),
+                #                     (300, 550))
+                # if self.count_down_time == '6':
+                #    self.screen.blit(pygame.transform.rotate(pygame.transform.scale(bongo_sprite[10], (532, 240)), 0),
+                #                     (300, 550))
+                # if self.count_down_time == '5':
+                #    self.screen.blit(pygame.transform.rotate(pygame.transform.scale(bongo_sprite[10], (666, 300)), 0),
+                #                     (300, 550))
+            if 4 <= int(self.count_down_time) <= 5:
+                if self.count_down_time == '5':
+                    self.draw_text('GAME', 506, 354, 70, 255, 255, 255)
+                    self.draw_text('GAME', 512, 360, 70, 0, 0, 0)
+                if self.count_down_time == '4':
+                    self.draw_text('START!', 506, 354, 70, 255, 255, 255)
+                    self.draw_text('START!', 512, 360, 70, 0, 0, 0)
+                self.screen.blit(pygame.transform.rotate(pygame.transform.scale(bongo_sprite[12], (1024, 1024)), 12.5),
+                                 (-40, 40))
+            if self.count_down_time == '3':
+                self.screen.blit(pygame.transform.rotate(pygame.transform.scale(bongo_sprite[1], (1024, 1024)), 12.5),
+                                 (-40, 40))
+                self.draw_countdown_timer(self.count_down_time)
             if self.count_down_time == '2':
                 self.screen.blit(pygame.transform.rotate(pygame.transform.scale(bongo_sprite[1], (1024, 1024)), 12.5),
                                  (-40, 40))  # mid bottom
@@ -159,6 +189,7 @@ class Game:
                                  (350, -300))  # right
                 self.screen.blit(pygame.transform.rotate(pygame.transform.scale(bongo_sprite[1], (1024, 1024)), -80),
                                  (-550, -180))  # left
+                self.draw_countdown_timer(self.count_down_time)
             if self.count_down_time == '1':
                 self.screen.blit(pygame.transform.rotate(pygame.transform.scale(bongo_sprite[1], (1024, 1024)), 12.5),
                                  (-40, 40))  # mid bottom
@@ -176,8 +207,7 @@ class Game:
                                  (350, -500))  # top right
                 self.screen.blit(pygame.transform.rotate(pygame.transform.scale(bongo_sprite[1], (1024, 1024)), 205.5),
                                  (-620, -610))  # top left
-            self.draw_text('Your Opponent is--- Meow ' + self.player_friend.name + '!', 0, 0, 60, 255, 255, 255)
-            self.draw_text('Lobby ID: ' + str(self.game_id), 0, 0, 40, 255, 255, 255)
+                self.draw_countdown_timer(self.count_down_time)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
@@ -268,10 +298,10 @@ class Game:
                 self.screen.blit(pygame.transform.scale(bg_sprite[7], (self.width, self.height)), (0, 0))
                 self.screen.blit(pygame.transform.rotate(pygame.transform.scale(bg_sprite[8], (600, 200)), 0),
                                  (200, 50))
-                self.screen.blit(pygame.transform.rotate(pygame.transform.scale(bongo_sprite[9], (500, 250)), 0),
-                                 (300, 480))
-                self.draw_text_result('YOU LOSE', 650, 120)
-                self.draw_text_result('SCORE: ' + str(self.player_me.score), 645, 300)
+                self.screen.blit(pygame.transform.rotate(pygame.transform.scale(bongo_sprite[9], (400, 180)), 0),
+                                 (300, 550))
+                self.draw_text('YOU LOSE', 512, 150, 50, 255, 255, 255)
+                self.draw_text('SCORE ' + str(self.player_me.score), 512, 300, 50, 255, 255, 255)
                 self.screen.blit(pygame.transform.rotate(pygame.transform.scale(button_sprite[1], (280, 98)), 0),
                                  (190, 400))
                 self.screen.blit(pygame.transform.rotate(pygame.transform.scale(button_sprite[2], (350, 130)), 0),
@@ -299,9 +329,9 @@ class Game:
                 self.screen.blit(pygame.transform.rotate(pygame.transform.scale(bg_sprite[11], (390, 200)), 0),
                                  (325, 50))
                 self.screen.blit(pygame.transform.rotate(pygame.transform.scale(bongo_sprite[0], (700, 700)), 13),
-                                 (165, 242))
-                self.draw_text_result('YOU WIN', 655, 120)
-                self.draw_text_result('SCORE: ' + str(self.player_me.score), 645, 300)
+                                 (125, 242))
+                self.draw_text('YOU WIN', 512, 150, 50, 0, 0, 0)
+                self.draw_text('SCORE ' + str(self.player_me.score), 512, 300, 50, 255, 255, 255)
                 self.screen.blit(pygame.transform.rotate(pygame.transform.scale(button_sprite[1], (280, 98)), 0),
                                  (190, 400))
                 self.screen.blit(pygame.transform.rotate(pygame.transform.scale(button_sprite[2], (350, 130)), 0),
@@ -326,10 +356,10 @@ class Game:
             if score_me == score_friend:
                 self.screen.fill(pygame.Color('white'))
                 self.screen.blit(pygame.transform.scale(bg_sprite[12], (self.width, self.height)), (0, 0))
-                self.screen.blit(pygame.transform.rotate(pygame.transform.scale(bg_sprite[13], (500, 200)), 0),
-                                 (255, 50))
-                self.draw_text_result('DRAW', 610, 120)
-                self.draw_text_result('SCORE: ' + str(self.player_me.score), 645, 300)
+                self.screen.blit(pygame.transform.rotate(pygame.transform.scale(bg_sprite[13], (350, 130)), 0),
+                                 (330, 85))
+                self.draw_text('DRAW', 512, 150, 50, 255, 255, 255)
+                self.draw_text('SCORE ' + str(self.player_me.score), 512, 300, 50, 255, 255, 255)
                 self.screen.blit(pygame.transform.rotate(pygame.transform.scale(button_sprite[1], (280, 98)), 0),
                                  (190, 400))
                 self.screen.blit(pygame.transform.rotate(pygame.transform.scale(button_sprite[2], (350, 130)), 0),
@@ -397,7 +427,7 @@ class Game:
             return game_data, player_dict, word_dict
 
     def sync_data(self, game_data_list, player_data_dict, word_data_dict):
-        print('game_data_list',game_data_list)
+        print('game_data_list', game_data_list)
         self.game_state = int(game_data_list[1])
         if self.game_state == 0:
             self.lobby_count = int(game_data_list[2])
@@ -433,11 +463,6 @@ class Game:
                 self.player_dict[player_id].score = player_data_dict[player_id][0]
                 self.player_dict[player_id].play_again = player_data_dict[player_id][1]
 
-
-
-
-
-
     """
     Stage 0:
     client data format
@@ -467,6 +492,7 @@ class Game:
     Restart Message:
         [game_id, restart, : client_id, score, play_again | client_id, score, play_again]
     """
+
     def draw_text(self, text, xpos, ypos, font_size, r, g, b):
         font = pygame.font.Font('Assets/font/pixelart.ttf', font_size)
         text_show = font.render(str(text), True, (r, g, b))

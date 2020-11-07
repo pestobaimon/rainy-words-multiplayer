@@ -1,15 +1,19 @@
 import pygame
+
 bongo_sprite = [
-    pygame.image.load('Assets/bongo_sprite/bongoup.png'),
-    pygame.image.load('Assets/bongo_sprite/bongodown.png'),
-    pygame.image.load('Assets/bongo_sprite/bongomeowup.png'),
-    pygame.image.load('Assets/bongo_sprite/bongomeowdown.png'),
-    pygame.image.load('Assets/bongo_sprite/bongoDR.png'),
-    pygame.image.load('Assets/bongo_sprite/bongomeowDR.png'),
-    pygame.image.load('Assets/bongo_sprite/bongoDL.png'),
-    pygame.image.load('Assets/bongo_sprite/bongomeowDL.png'),
-    pygame.image.load('Assets/bongo_sprite/bongofin.png'),
-    pygame.image.load('Assets/bongo_sprite/sadbongo1.png')
+    pygame.image.load('Assets/bongo_sprite/bongoup.png'),  # 0
+    pygame.image.load('Assets/bongo_sprite/bongodown.png'),  # 1
+    pygame.image.load('Assets/bongo_sprite/bongomeowup.png'),  # 2
+    pygame.image.load('Assets/bongo_sprite/bongomeowdown.png'),  # 3
+    pygame.image.load('Assets/bongo_sprite/bongoDR.png'),  # 4
+    pygame.image.load('Assets/bongo_sprite/bongomeowDR.png'),  # 5
+    pygame.image.load('Assets/bongo_sprite/bongoDL.png'),  # 6
+    pygame.image.load('Assets/bongo_sprite/bongomeowDL.png'),  # 7
+    pygame.image.load('Assets/bongo_sprite/bongofin.png'),  # 8
+    pygame.image.load('Assets/bongo_sprite/sadbongo1.png'),  # 9
+    pygame.image.load('Assets/bongo_sprite/angrybongo.png'),  # 10
+    pygame.image.load('Assets/bongo_sprite/madbongobar.png'),  # 11
+    pygame.image.load('Assets/bongo_sprite/bongodownsay.png')  # 12
 ]
 
 bg_sprite = [
@@ -32,8 +36,8 @@ bg_sprite = [
 
 button_sprite = [
     pygame.image.load('Assets/text_surface/black_text_box.png'),
-    pygame.image.load('Assets/bg/replay.png'), #1
-    pygame.image.load('Assets/bg/exitnew1.png') #2
+    pygame.image.load('Assets/bg/replay.png'),  # 1
+    pygame.image.load('Assets/bg/exitnew1.png')  # 2
 ]
 
 addi_sprite = [
