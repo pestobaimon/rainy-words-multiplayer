@@ -6,6 +6,7 @@ from timer import Timer
 from words_client import Word
 from png_sprite import *
 import pygame
+from pygame import mixer
 
 
 class Game:
@@ -58,6 +59,10 @@ class Game:
         self.mouse_pos = []
         self.lobby_count = 0
         self.msg = ''
+
+        # game soundtrack
+        mixer.music.load('Assets/sound/bitrush.mp3')
+        mixer.music.play(-1)
 
     def start(self):
         playing = True
@@ -219,6 +224,7 @@ class Game:
         if self.game_state == 2:
             self.backspace_clock.tick()
             keys = pygame.key.get_pressed()
+            meow_sound = mixer.Sound('Assets/sound/meow.mp3')
             # redraw per frame
             self.draw_state_me = 0
             self.screen.fill(pygame.Color('white'))
@@ -241,7 +247,8 @@ class Game:
                         self.player_me.keystrokes += event.unicode
                     elif event.unicode == '\r' or event.key == pygame.K_RETURN:
                         self.player_me.confirm_key = True
-
+            if self.draw_state_me == 2 or self.draw_state_friend == 2:
+                meow_sound.play()
             if self.draw_state_me == 0:
                 self.draw_bongo_cat(self.player_bongo_me[0], 0)
 
