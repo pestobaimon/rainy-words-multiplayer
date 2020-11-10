@@ -7,7 +7,7 @@ from queue import *
 import pygame
 
 from timer import Timer
-from word_library import word_set
+from word_library import *
 from words_server import Word
 
 lock = threading.Lock()
@@ -73,12 +73,12 @@ class Server:
     """
 
     def handle_client(self, conn, addr, client_id, game_id):
-        conn.send(str.encode(str(game_id) + "," + str(client_id)))
+        conn.send(str.encode(str(game_id) + "," + str(client_id)))  #ตอนสร้างth เราส่งgame idกับclient idให้เลย
 
         print(f"[NEW CONNECTION] {addr} connected")
 
         connected = True
-        current_game = self.games[game_id]
+        current_game = self.games[game_id]  #ห้องที่clientคนนี้อยู๋
         recv_q = current_game.client_queues[client_id]
         while connected:
 
@@ -99,6 +99,7 @@ class Server:
                 print(f'disconnected from {addr} ')
                 break
             with lock:
+            #lock.require() >> another thread can not access shared resource in this thread >> shared = same parameter that shared between two threads
                 print(f'client thread {str(client_id)} got a lock')
                 if current_game.game_state == 0:
                     if rcv_game_state == current_game.game_state:
@@ -141,9 +142,10 @@ class Server:
                             msg += str(key) + "," + str(current_game.players[key].score) + "," + str(1 if current_game.players[key].play_again else 0) + "|"
                         msg = msg[:-1]
                     conn.sendall(str.encode(msg))
+            # lock.release() >> another thread can use the resource
             print(f'client thread {str(client_id)} released a lock')
 
-    def run_game_serve(self):
+    def run_game_serve(self): #counter karaoke
         self.server.listen()
         print(f"[LISTENING] Server is listening on {self.SERVER}")
         client_id = 0
@@ -152,17 +154,21 @@ class Server:
         while True:
             conn, addr = self.server.accept()
             thread_client = threading.Thread(target=self.handle_client,
-                                             args=(conn, addr, client_id, game_id))
-            if client_id == 0:
-                self.games[game_id] = Game(game_id, {})
+                                             args=(conn, addr, client_id, game_id))  #ตอนสร้างthส่งอะไรให้clientบ้าง
+            if client_id == 0:  #create new room
+                self.games[game_id] = Game(game_id, {}) # add new instance of Game() to dictionary self.games
                 print('opened room', game_id)
+                """
+                x = Game(1, {})
+                x.players[0]  player number 0 of game number 1
+                """
                 self.games[game_id].players[client_id] = Player('', client_id, game_id)
                 print('Added player', client_id, 'to', 'room', game_id)
                 self.games[game_id].client_queues[client_id] = Queue()
                 thread_game = threading.Thread(target=self.games[game_id].run_game_room)
                 thread_game.start()
                 client_id += 1
-            elif client_id == 1:
+            elif client_id == 1:  #join existing room
                 self.games[game_id].players[client_id] = Player('', client_id, game_id)
                 print('Added player', client_id, 'to', 'room', game_id)
                 self.games[game_id].client_queues[client_id] = Queue()
@@ -182,7 +188,8 @@ class Game:
         self.players = players
         self.time = 0
         self.client_queues = {}
-        self.play_again = False
+        self.easy_word_count = 0
+        self.hard_word_count = 0
 
     def run_game_room(self):
         clock = pygame.time.Clock()
@@ -214,12 +221,13 @@ class Game:
                         self.frame_string = self.frame_string[:-1] + ":"
                         print('game room released a lock')
 
-            word_mem = []
-
+            # word_mem = []
+            easy_mem = []  #set of easy word that will fall
+            hard_mem = []  #set of hard word that will fall
             timer = Timer()
             start_ticks = pygame.time.get_ticks()
             print('game room got a lock')
-            while self.game_state == 2:
+            while self.game_state == 2:  #playing
                 framerate = clock.tick(30)
                 with lock:
                     self.time = int((pygame.time.get_ticks() - start_ticks) / 1000)
@@ -238,26 +246,39 @@ class Game:
                     if timer.time >= 90:
                         timer.reset()
 
-                    if len(word_mem) <= 1:
+                    if len(word_mem) <= 1:  #ก่อนที่จะมีwordตกลงมา
                         timer.tick()
-                    if 2 == random.randint(1, 60):
+                    """if 2 == random.randint(1, 60):
                         self.add_new_word(word_mem)
-                    if len(word_mem) <= 1 and timer.time >= 90:
+                        ทุกframeที่เปลี่ยนไป จะมีการสุ่ม1ครั้ง
+                    """
+                    if 2 == random.randint(1, 40):  #75% to get easy word
+                        self.add_easy_word(easy_mem)
+                    if 2 == random.randint(1, 150):  #20% to get hard word
+                        self.add_hard_word(hard_mem)
+
+                    if len(word_mem) <= 1 and timer.time >= 90:  #ถ้าสุ่มไม่ได้ซักที ก็ให้มันตกลงมาเองเลย
                         self.add_new_word(word_mem)
                         timer.reset()
 
-                    removed_words = []
+                    word_mem = []  #all words falling on screen >> both easy and hard
+                    for easy in easy_mem:
+                        word_mem.append(easy)
+                    for hard in hard_mem:
+                        word_mem.append(hard)
+
+                    removed_words = []  #อันที่ตกหน้าจอไปแล้ว
 
                     for word in word_mem:
-                        if not word.disabled:
+                        if not word.disabled:  #if True
                             self.move_word(word)
                             if word.text_rect.bottomleft[1] > 730:
                                 word.disable()
                                 removed_words.append(word)
 
                             for client_id in self.players:
-                                if self.players[client_id].word_submit != " ":
-                                    if (self.players[client_id].word_submit == word.word) and (not word.disabled):
+                                if self.players[client_id].word_submit != " ":  #player submitคำไรมาซักอย่าง ไม่enterเปล่า
+                                    if (self.players[client_id].word_submit == word.word) and (not word.disabled):  #submitคำที่อยู๋ในหน้าจอ และไม่ใช่คำที่ตกไปแล้ว
                                         self.players[client_id].score += 1
                                         print('plus')
                                         word.disable()
@@ -284,31 +305,44 @@ class Game:
 
             while self.game_state == 3:
                 framerate = clock.tick(30)
-                for key in self.client_queues:
-                    try:
-                        x = self.client_queues[key].get_nowait()
-                        self.sync_data(x)
-                    except Empty as e:
-                        pass
-                self.play_again = True
-                for key in self.players:
-                    self.play_again = self.play_again and self.players[key].play_again
-                if self.play_again:
-                    print('game room got a lock')
-                    self.game_state = 1
-                    self.reset_data()
-                    print('game room released a lock')
+                with lock:
+                    for key in self.client_queues:
+                        try:
+                            x = self.client_queues[key].get_nowait()
+                            self.sync_data(x)
+                        except Empty as e:
+                            pass
+                    if self.players[0].play_again and self.player[1].play_again:
+                        print('game room got a lock')
+                        self.game_state = 1
+                        self.reset_data()
+                        print('game room released a lock')
 
 
     @staticmethod
     def move_word(w):
         w.text_rect.move_ip(0, w.fall_speed)
 
-    def add_new_word(self, word_mem):
+    def add_new_word(self, word_mem):  #แก้
+        # ตอนนี้สุ่ม30ครั้งต่อวิ
         key = random.choice(list(word_set.keys()))
         word_mem.append(Word(self.word_count, key))
+        #word_countคือcountในarrayใหม่ที่จะส่งไปclient >> keyคืิอเพื่อaccessคำในword_set
+        #word_mem คือwordที่จะส่งไปหาclientเพื่อที่จะตกลงมา
         self.word_count += 1
         return word_set[key]
+
+    def add_easy_word(self, easy_mem):
+        key = random.choice(list(easy_word.keys()))
+        easy_mem.append(Word(self.easy_word_count, key))
+        self.easy_word_count += 1
+        return easy_word[key]
+
+    def add_hard_word(self, hard_mem):
+        key = random.choice(list(hard_word.keys()))
+        hard_mem.append(Word(self.hard_word_count, key))
+        self.hard_word_count += 1
+        return hard_word[key]
 
     @staticmethod
     def parse_data(self, data):
@@ -321,7 +355,6 @@ class Game:
             self.players[key].action_index = 0
             self.players[key].ready = False
             self.players[key].play_again = False
-        self.play_again = False
         self.time = 0
         self.word_count = 0
         self.frame_string = ''
