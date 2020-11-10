@@ -28,7 +28,7 @@ class Player:
 class Server:
     HEADER = 64
     PORT = 5050
-    SERVER = "192.168.1.8"
+    SERVER = "192.168.1.11"
     ADDR = (SERVER, PORT)
     FORMAT = 'utf-8'
     DISCONNECT_MESSAGE = "!DISCONNECT"
@@ -223,7 +223,7 @@ class Game:
                 framerate = clock.tick(30)
                 with lock:
                     self.time = int((pygame.time.get_ticks() - start_ticks) / 1000)
-                    if self.time == 5:
+                    if self.time == 300:
                         self.game_state = 3
                     frame_string = ""
                     for key in self.client_queues:

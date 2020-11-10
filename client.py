@@ -38,6 +38,7 @@ class Game:
         self.draw_index = 0
         self.vfx_boom = boom_sprite
         self.screen = pygame.display.set_mode((self.width, self.height))
+        self.flip_screen = pygame.display.set_mode((self.width, self.height))
         self.keys_to_play = []
         self.word_to_play_mem = []
         pygame.display.set_caption('client1')
@@ -61,8 +62,17 @@ class Game:
         self.msg = ''
 
         # game soundtrack
-        mixer.music.load('Assets/sound/bitrush.mp3')
+        mixer.music.load('Assets/sound/NESNyan.mp3')
+        mixer.music.set_volume(0.05)
         mixer.music.play(-1)
+
+        # game sfx
+        self.explo_sound = mixer.Sound('Assets/sound/8bitexplo.mp3')
+        self.explo_sound.set_volume(0.5)
+        self.meow_sound = mixer.Sound('Assets/sound/meow.mp3')
+        self.meow_sound.set_volume(0.5)
+        self.cd_sound = mixer.Sound('Assets/sound/MarioKCD.mp3')
+        self.cd_sound.set_volume(0.1)
 
     def start(self):
         playing = True
@@ -108,6 +118,7 @@ class Game:
                             print('confirm button clicked!')
                             self.player_me.name = self.player_me.keystrokes
                             print('Meow ' + self.player_me.name + ' has joined the fray!')
+                            self.meow_sound.play()
                             self.player_me.keystrokes = ''
                             running = False
                         else:
@@ -163,15 +174,6 @@ class Game:
                     self.draw_text('Meow ' + self.player_friend.name + '!', 512, 400, 70, 0, 0, 0)
                     self.screen.blit(pygame.transform.rotate(pygame.transform.scale(bongo_sprite[11], (1024, 420)), 0),
                                      (0, 375))
-                # if self.count_down_time == '7':
-                #    self.screen.blit(pygame.transform.rotate(pygame.transform.scale(bongo_sprite[10], (400, 180)), 0),
-                #                     (300, 550))
-                # if self.count_down_time == '6':
-                #    self.screen.blit(pygame.transform.rotate(pygame.transform.scale(bongo_sprite[10], (532, 240)), 0),
-                #                     (300, 550))
-                # if self.count_down_time == '5':
-                #    self.screen.blit(pygame.transform.rotate(pygame.transform.scale(bongo_sprite[10], (666, 300)), 0),
-                #                     (300, 550))
             if 4 <= int(self.count_down_time) <= 5:
                 if self.count_down_time == '5':
                     self.draw_text('GAME', 506, 354, 70, 255, 255, 255)
@@ -182,6 +184,7 @@ class Game:
                 self.screen.blit(pygame.transform.rotate(pygame.transform.scale(bongo_sprite[12], (1024, 1024)), 12.5),
                                  (-40, 40))
             if self.count_down_time == '3':
+                self.cd_sound.play()
                 self.screen.blit(pygame.transform.rotate(pygame.transform.scale(bongo_sprite[1], (1024, 1024)), 12.5),
                                  (-40, 40))
                 self.draw_countdown_timer(self.count_down_time)
@@ -224,7 +227,6 @@ class Game:
         if self.game_state == 2:
             self.backspace_clock.tick()
             keys = pygame.key.get_pressed()
-            meow_sound = mixer.Sound('Assets/sound/meow.mp3')
             # redraw per frame
             self.draw_state_me = 0
             self.screen.fill(pygame.Color('white'))
@@ -248,7 +250,7 @@ class Game:
                     elif event.unicode == '\r' or event.key == pygame.K_RETURN:
                         self.player_me.confirm_key = True
             if self.draw_state_me == 2 or self.draw_state_friend == 2:
-                meow_sound.play()
+                self.meow_sound.play()
             if self.draw_state_me == 0:
                 self.draw_bongo_cat(self.player_bongo_me[0], 0)
 
@@ -260,6 +262,8 @@ class Game:
             self.draw_name_friend()
             self.draw_score_friend(self.player_friend.score)
             self.draw_current_stroke(self.player_me.keystrokes)
+            self.draw_text(300-self.game_time, 510, 18, 50, 255, 255, 255)
+            self.draw_text(300-self.game_time, 512, 20, 50, 0, 0, 0)  # 300 --> total game time
 
             for word_id in self.word_mem:
                 if self.player_me.keystrokes == '':
@@ -463,6 +467,8 @@ class Game:
             keys_to_keep = set(word_data_dict.keys()).intersection(set(self.word_mem.keys()))
             keys_to_play = set(self.word_mem.keys()).difference(set(word_data_dict.keys()))
             self.word_to_play_mem = {k: v for k, v in self.word_mem.items() if k in keys_to_play}
+            if self.word_to_play_mem:
+                self.explo_sound.play()
             self.word_mem = {k: v for k, v in self.word_mem.items() if k in keys_to_keep}
 
         elif self.game_state == 3:
