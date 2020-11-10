@@ -37,6 +37,7 @@ class Game:
 
         # display client
         self.draw_index = 0
+        self.bg_pos = 0
         self.vfx_boom = boom_sprite
         self.screen = pygame.display.set_mode((self.width, self.height))
         self.display = pygame.Surface(self.screen.get_size())
@@ -58,6 +59,7 @@ class Game:
         self.removed_word_animation = []
         self.backspace_clock = Timer()
         self.ability_clock = Timer()
+        self.black_clock = Timer()
         self.type_state = False
         self.mouse_pos = []
         self.lobby_count = 0
@@ -77,9 +79,14 @@ class Game:
         self.cd_sound.set_volume(0.1)
 
         # game ability
-        self.high_af = False  # flip entire screen
-        self.shake_af = True  # screen shake
-
+        self.ability_index = 3  # nothing
+        """
+        index = 0 ; no ability occurs
+        index = 1 ; screen flip
+        index = 2 ; screen shake
+        index = 3 ; black screen
+        """
+        
     def start(self):
         playing = True
         self.insert_name()
@@ -149,7 +156,7 @@ class Game:
         if self.game_state == 0:
             self.msg = self.player_me.name
             self.display.fill(pygame.Color('white'))
-            self.display.blit(pygame.transform.scale(bg_sprite[5], (self.width, self.height)), (0, 0))
+            self.display.blit(pygame.transform.scale(bg_sprite[5], (self.width, self.height)), (0, self.bg_pos))
             self.display.blit(pygame.transform.rotate(pygame.transform.scale(bg_sprite[4], (750, 400)), 0), (40, 50))
             self.draw_text_waiting('Hello ! , ' + self.player_me.name, 100, 120)
             self.draw_text_waiting('Joined Room ' + str(self.game_id), 100, 180)
@@ -238,9 +245,8 @@ class Game:
             keys = pygame.key.get_pressed()
             # redraw per frame
             self.draw_state_me = 0
-            render_offset = [0, 0]
             self.display.fill(pygame.Color('white'))
-            self.display.blit(pygame.transform.scale(bg_sprite[0], (self.width, self.height)), (0, 0))
+            self.display.blit(pygame.transform.scale(bg_sprite[14], (self.width, 4*self.height)), (0, self.bg_pos))
             self.display.blit(pygame.transform.rotate(pygame.transform.scale(bg_sprite[1], (200, 100)), 2), (70, 570))
             self.display.blit(
                 pygame.transform.flip(pygame.transform.rotate(pygame.transform.scale(bg_sprite[1], (200, 100)), 2),
@@ -308,22 +314,8 @@ class Game:
                 self.player_me.confirm_key = False
             else:
                 self.msg = " ," + str(self.draw_state_me)
-            if self.high_af:
-                if self.ability_clock.time == 150:  # 5 seconds
-                    self.high_af = False
-                    self.ability_clock.reset()
-                self.screen.blit(pygame.transform.flip(self.display, False, True), 0, 0)
-                self.ability_clock.tick()
-            elif self.shake_af:
-                if self.ability_clock.time == 150:  # 5 seconds
-                    self.shake_af = False
-                    self.ability_clock.reset()
-                render_offset[0] = random.randint(0, 8) - 4
-                render_offset[1] = random.randint(0, 8) - 4
-                self.screen.blit(self.display, render_offset)
-                self.ability_clock.tick()
-            else:
-                self.screen.blit(self.display, (0, 0))
+            self.ability_check()
+            self.bg_pos -= 1.15
             pygame.display.update()
 
     def result(self):
@@ -534,13 +526,40 @@ class Game:
         [game_id, restart, : client_id, score, play_again | client_id, score, play_again]
     """
 
+    def ability_check(self):
+        render_offset = [0, 0]
+        if self.ability_index == 1:
+            if self.ability_clock.time == 150:  # 5 seconds
+                self.ability_index = 0
+                self.ability_clock.reset()
+            self.screen.blit(pygame.transform.flip(self.display, False, True), (0, 0))
+            self.ability_clock.tick()
+        elif self.ability_index == 2:
+            if self.ability_clock.time == 150:  # 5 seconds
+                self.ability_index = 0
+                self.ability_clock.reset()
+            render_offset[0] = random.randint(0, 8) - 4
+            render_offset[1] = random.randint(0, 8) - 4
+            self.screen.blit(self.display, render_offset)
+            self.ability_clock.tick()
+        elif self.ability_index == 3:
+            if self.ability_clock.time == 150:  # 5 seconds
+                self.ability_index = 0
+                self.ability_clock.reset()
+            if int(self.ability_clock.time/15) % 2 == 0:
+                self.display.blit(pygame.transform.scale(bg_sprite[15], (self.width, self.height)), (0, 0))
+            else:
+                self.display.blit(pygame.transform.scale(bg_sprite[16], (self.width, self.height)), (0, 0))
+            self.screen.blit(self.display, (0, 0))
+            self.ability_clock.tick()
+        else:
+            self.screen.blit(self.display, (0, 0))
+
     def draw_text(self, text, xpos, ypos, font_size, r, g, b):
         font = pygame.font.Font('Assets/font/pixelart.ttf', font_size)
         text_show = font.render(str(text), True, (r, g, b))
         text_show_rect = text_show.get_rect()
         text_show_rect.center = (xpos, ypos)
-        if self.high_af:
-            self.display.blit(pygame.transform.flip(text_show, False, True), text_show_rect)
         self.display.blit(text_show, text_show_rect)
 
     def draw_name_stroke(self, current_stroke):

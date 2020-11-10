@@ -31,7 +31,9 @@ bg_sprite = [
     pygame.image.load('Assets/bg/textbox2.png'),
     pygame.image.load('Assets/bg/drawscreen.jpg'),
     pygame.image.load('Assets/bg/dbox.png'),
-
+    pygame.image.load('Assets/bg/longsky.png'), #14
+    pygame.image.load('Assets/bg/black_screen1.png'), #15
+    pygame.image.load('Assets/bg/black_screen2.png'), #16
 ]
 
 button_sprite = [
