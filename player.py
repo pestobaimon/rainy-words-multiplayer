@@ -1,17 +1,10 @@
 class Player:
 
-    def __init__(self, name):
+    def __init__(self, name, id_in):
         self.name = name
         self.score = 0
         self.keystrokes = ''
         self.confirm_key = False
-        self.id = 0
+        self.id = id_in
         self.connected = False
-
-    def __init__(self, name, id):
-        self.name = name
-        self.score = 0
-        self.keystrokes = ''
-        self.confirm_key = False
-        self.id = id
-        self.connected = False
+        self.play_again = False

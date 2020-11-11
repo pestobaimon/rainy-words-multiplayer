@@ -5,20 +5,18 @@ class Network:
 
     def __init__(self):
         self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.host = "25.40.56.186"
+        self.host = "192.168.1.11"
         self.port = 5050
         self.addr = (self.host, self.port)
-        self.id = self.connect()
+        self.game_id, self.id = self.connect()
+        print(self.game_id, self.id)
 
     def connect(self):
         self.client.connect(self.addr)
-        return self.client.recv(4096).decode()
+        recv_msg = self.client.recv(4096).decode().split(",")
+        return recv_msg[0], recv_msg[1]
 
     def send(self, data):
-        """
-        :param data: str
-        :return: str
-        """
         try:
             self.client.send(str.encode(data))
             reply = self.client.recv(4096).decode()
