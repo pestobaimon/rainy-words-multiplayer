@@ -59,11 +59,7 @@ class Server:
     client data format: 
     [game_id, client_id, client_game_state, word_submit, action_index] 
     server data format: 
-<<<<<<< Updated upstream
-    [game_id, game_state, opponent_action_index, time_seconds, opponent_ability_index : client_id, score | client_id,score : word_id,
-=======
     [game_id, game_state, opponent_action_index, time_seconds, ability_index : client_id, score | client_id,score : word_id,
->>>>>>> Stashed changes
     word_code,fall_speed,x_pos,y_pos | word_id,word_code,fall_speed,x_pos,y_pos | , ....] 
     
     index = 0 ; no ability occurs
@@ -287,17 +283,14 @@ class Game:
                             for client_id in self.players:
                                 if self.players[client_id].word_submit != " ":  #player submitคำไรมาซักอย่าง ไม่enterเปล่า
                                     if (self.players[client_id].word_submit == word.word) and (not word.disabled):  #submitคำที่อยู๋ในหน้าจอ และไม่ใช่คำที่ตกไปแล้ว
-
-                                if self.players[client_id].word_submit != " ":
-                                    if (self.players[client_id].word_submit == word.word) and (not word.disabled):
-                                        if (len(self.player[client_id].word_submit) == 8 ):
+                                        if len(self.players[client_id].word_submit) == 8:
                                              self.ability_index = 1
-                                        elif (len(self.player[client_id].word_submit) == 10):
+                                        elif len(self.players[client_id].word_submit) == 10:
                                             self.ability_index = 2
-                                        elif(len(self.player[client_id].word_submit) == 12)):
+                                        elif len(self.players[client_id].word_submit) == 12:
                                             self.ability_index = 3
                                         else:
-                                            self.ability_index = 0
+                                            self.ability_index =0
                                         self.players[client_id].score += 1
                                         print('plus')
                                         word.disable()
@@ -312,11 +305,11 @@ class Game:
 
                     if len(removed_words) > 0:
                         word_mem = [i for i in word_mem if i not in removed_words]
-                    for key in self.players:
+                    for key in self.players:  #ของclient
                         client_string = str(key) + "," + str(self.players[key].score) + "|"
                         frame_string += client_string
                     frame_string = frame_string[:-1] + ":"
-                    for word in word_mem:
+                    for word in word_mem:  #ของแต่ละword
                         word_string = str(word.id) + "," + str(word.word_code) + "," + str(word.fall_speed) + "," + str(
                             word.text_rect.topleft[0]) + "," + str(word.text_rect.topleft[1]) + "|"
                         frame_string += word_string
@@ -397,15 +390,15 @@ class Game:
                 self.players[client_input[0]].play_again = int(client_input[1])
 
 
-def get_opponent(self_id):
-    if self_id == 1:
-        return 0
-    elif self_id == 0:
-        return 1
-    else:
-        return 'error'
+    def get_opponent(self_id):
+        if self_id == 1:
+            return 0
+        elif self_id == 0:
+            return 1
+        else:
+            return 'error'
 
 
-if __name__ == "__main__":
-    server = Server()
-    server.run_game_serve()
+    if __name__ == "__main__":
+        server = Server()
+        server.run_game_serve()
