@@ -29,7 +29,7 @@ class Player:
 class Server:
     HEADER = 64
     PORT = 5050
-    SERVER = "192.168.1.4"
+    SERVER = "192.168.1.40"
     ADDR = (SERVER, PORT)
     FORMAT = 'utf-8'
     DISCONNECT_MESSAGE = "!DISCONNECT"
@@ -256,8 +256,7 @@ class Game:
                         self.add_new_word(word_mem)
                         ทุกframeที่เปลี่ยนไป จะมีการสุ่ม1ครั้ง
                     """
-                    # level easy
-                    if self.time > 0 or self.time <= 90:
+                    if self.time > 0 or self.time <= 90:  # level easy
                         if 2 == random.randint(1, 40):  #75% to get easy word
                             self.add_easy_word(word_mem)
                         if 2 == random.randint(1, 150):  #20% to get hard word
@@ -344,14 +343,6 @@ class Game:
         #word_mem คือwordที่จะส่งไปหาclientเพื่อที่จะตกลงมา
         self.word_count += 1
         return word_set[key]
-
-    """
-    def add_moving_word(self, word_mem):
-        key = random.choice(list(moving_set.keys()))
-        word_mem.append(Word(key))
-        return moving_set[key]
-    
-    """
 
     def add_easy_word(self, word_mem):
         key = random.choice(list(easy_word.keys()))
