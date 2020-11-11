@@ -14,7 +14,7 @@ for key in word_set:
         hard_word["h"+str(j)] = word_set[key]  #h1,h2,h3
         j += 1
 
-print(easy_word)  #amount of easy word
+# print(easy_word)  #amount of easy word
 # print(j)  #amount of hard word
 
 moving_set = {}

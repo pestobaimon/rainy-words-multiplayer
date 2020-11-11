@@ -28,7 +28,7 @@ class Player:
 class Server:
     HEADER = 64
     PORT = 5050
-    SERVER = "192.168.1.8"
+    SERVER = "192.168.1.4"
     ADDR = (SERVER, PORT)
     FORMAT = 'utf-8'
     DISCONNECT_MESSAGE = "!DISCONNECT"
@@ -59,8 +59,13 @@ class Server:
     client data format: 
     [game_id, client_id, client_game_state, word_submit, action_index] 
     server data format: 
-    [game_id, game_state, opponent_action_index, time_seconds : client_id, score | client_id,score : word_id,
+    [game_id, game_state, opponent_action_index, time_seconds, opponent_ability_index : client_id, score | client_id,score : word_id,
     word_code,fall_speed,x_pos,y_pos | word_id,word_code,fall_speed,x_pos,y_pos | , ....] 
+    
+    index = 0 ; no ability occurs
+    index = 1 ; screen flip
+    index = 2 ; screen shake
+    index = 3 ; black screen
 
     Stage 3:
     client data format:
@@ -221,9 +226,7 @@ class Game:
                         self.frame_string = self.frame_string[:-1] + ":"
                         print('game room released a lock')
 
-            # word_mem = []
-            easy_mem = []  #set of easy word that will fall
-            hard_mem = []  #set of hard word that will fall
+            word_mem = []
             timer = Timer()
             start_ticks = pygame.time.get_ticks()
             print('game room got a lock')
@@ -271,7 +274,7 @@ class Game:
                     removed_words = []  #อันที่ตกหน้าจอไปแล้ว
 
                     for word in word_mem:
-                        if not word.disabled:  #if True
+                        if not word.disabled:  #if True >> there is a word
                             self.move_word(word)
                             if word.text_rect.bottomleft[1] > 730:
                                 word.disable()
@@ -333,15 +336,15 @@ class Game:
         self.word_count += 1
         return word_set[key]
 
-    def add_easy_word(self, easy_mem):
+    def add_easy_word(self, word_mem):
         key = random.choice(list(easy_word.keys()))
-        easy_mem.append(Word(self.easy_word_count, key))
+        word_mem.append(Word(self.easy_word_count, key))
         self.easy_word_count += 1
-        return easy_word[key]
+        return easy_word[key]  #return one random word from easy_word set
 
-    def add_hard_word(self, hard_mem):
+    def add_hard_word(self, word_mem):
         key = random.choice(list(hard_word.keys()))
-        hard_mem.append(Word(self.hard_word_count, key))
+        word_mem.append(Word(self.hard_word_count, key))
         self.hard_word_count += 1
         return hard_word[key]
 
