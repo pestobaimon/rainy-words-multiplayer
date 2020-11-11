@@ -59,7 +59,11 @@ class Server:
     client data format: 
     [game_id, client_id, client_game_state, word_submit, action_index] 
     server data format: 
+<<<<<<< Updated upstream
     [game_id, game_state, opponent_action_index, time_seconds, opponent_ability_index : client_id, score | client_id,score : word_id,
+=======
+    [game_id, game_state, opponent_action_index, time_seconds, ability_index : client_id, score | client_id,score : word_id,
+>>>>>>> Stashed changes
     word_code,fall_speed,x_pos,y_pos | word_id,word_code,fall_speed,x_pos,y_pos | , ....] 
     
     index = 0 ; no ability occurs
@@ -283,6 +287,17 @@ class Game:
                             for client_id in self.players:
                                 if self.players[client_id].word_submit != " ":  #player submitคำไรมาซักอย่าง ไม่enterเปล่า
                                     if (self.players[client_id].word_submit == word.word) and (not word.disabled):  #submitคำที่อยู๋ในหน้าจอ และไม่ใช่คำที่ตกไปแล้ว
+
+                                if self.players[client_id].word_submit != " ":
+                                    if (self.players[client_id].word_submit == word.word) and (not word.disabled):
+                                        if (len(self.player[client_id].word_submit) == 8 ):
+                                             self.ability_index = 1
+                                        elif (len(self.player[client_id].word_submit) == 10):
+                                            self.ability_index = 2
+                                        elif(len(self.player[client_id].word_submit) == 12)):
+                                            self.ability_index = 3
+                                        else:
+                                            self.ability_index = 0
                                         self.players[client_id].score += 1
                                         print('plus')
                                         word.disable()
@@ -335,6 +350,13 @@ class Game:
         #word_mem คือwordที่จะส่งไปหาclientเพื่อที่จะตกลงมา
         self.word_count += 1
         return word_set[key]
+"""
+    def add_moving_word(self, word_mem):
+        key = random.choice(list(moving_set.keys()))
+        word_mem.append(Word(key))
+        return moving_set[key]
+    
+"""
 
     def add_easy_word(self, word_mem):
         key = random.choice(list(easy_word.keys()))

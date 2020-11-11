@@ -446,6 +446,7 @@ class Game:
         elif self.game_state == 2:
             self.draw_state_friend = int(game_data_list[2])
             self.game_time = int(game_data_list[3])
+            self.ability_index = int(game_data_list[4])
             for player_id in player_data_dict:
                 self.player_dict[player_id].score = player_data_dict[player_id][0]
             for word_data in word_data_dict:
