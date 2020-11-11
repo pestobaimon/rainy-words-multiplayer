@@ -23,6 +23,7 @@ class Player:
         self.action_index = 0
         self.ready = False
         self.play_again = False
+        self.ability_index = 0
 
 
 class Server:
@@ -127,7 +128,7 @@ class Server:
                         word_submit = str(client_data_arr[3])
                         action_index = int(client_data_arr[4])
                         recv_q.put([client_id, word_submit, action_index])
-                    msg = str(game_id) + "," + str(current_game.game_state) + "," + str(current_game.players[get_opponent(client_id)].action_index) + "," + str(current_game.time) + ":" + current_game.frame_string
+                    msg = str(game_id) + "," + str(current_game.game_state) + "," + str(current_game.players[get_opponent(client_id)].action_index) + "," + str(current_game.time) + ","+ str(current_game.players[get_opponent(client_id)].ability_index) + ":" + current_game.frame_string
                     print('msg_2', msg)
                     conn.sendall(str.encode(msg))
                 elif current_game.game_state == 3:
@@ -402,3 +403,4 @@ class Game:
     if __name__ == "__main__":
         server = Server()
         server.run_game_serve()
+        
