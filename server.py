@@ -291,7 +291,7 @@ class Game:
                                         elif len(self.players[client_id].word_submit) == 12:
                                             self.ability_index = 3
                                         else:
-                                            self.ability_index =0
+                                            self.ability_index = 0
                                         self.players[client_id].score += 1
                                         print('plus')
                                         word.disable()
@@ -344,13 +344,14 @@ class Game:
         #word_mem คือwordที่จะส่งไปหาclientเพื่อที่จะตกลงมา
         self.word_count += 1
         return word_set[key]
-"""
+
+    """
     def add_moving_word(self, word_mem):
         key = random.choice(list(moving_set.keys()))
         word_mem.append(Word(key))
         return moving_set[key]
     
-"""
+    """
 
     def add_easy_word(self, word_mem):
         key = random.choice(list(easy_word.keys()))
@@ -391,7 +392,7 @@ class Game:
                 self.players[client_input[0]].play_again = int(client_input[1])
 
 
-    def get_opponent(self_id):
+def get_opponent(self_id):
         if self_id == 1:
             return 0
         elif self_id == 0:
@@ -400,7 +401,7 @@ class Game:
             return 'error'
 
 
-    if __name__ == "__main__":
+if __name__ == "__main__":
         server = Server()
         server.run_game_serve()
         
