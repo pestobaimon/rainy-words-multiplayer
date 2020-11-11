@@ -71,11 +71,11 @@ class Game:
         mixer.music.play(-1)
 
         # game sfx
-        self.explo_sound = mixer.Sound('Assets/sound/8bitexplo.mp3')
+        self.explo_sound = mixer.Sound('Assets/sound/8bitexplo.ogg')
         self.explo_sound.set_volume(0.5)
-        self.meow_sound = mixer.Sound('Assets/sound/meow.mp3')
+        self.meow_sound = mixer.Sound('Assets/sound/meow.ogg')
         self.meow_sound.set_volume(0.5)
-        self.cd_sound = mixer.Sound('Assets/sound/MarioKCD.mp3')
+        self.cd_sound = mixer.Sound('Assets/sound/MarioKCD.ogg')
         self.cd_sound.set_volume(0.1)
 
         # game ability
@@ -246,7 +246,7 @@ class Game:
             # redraw per frame
             self.draw_state_me = 0
             self.display.fill(pygame.Color('white'))
-            self.display.blit(pygame.transform.scale(bg_sprite[14], (self.width, 4*self.height)), (0, self.bg_pos))
+            self.display.blit(pygame.transform.scale(bg_sprite[14], (self.width, 9*self.height)), (0, self.bg_pos))
             self.display.blit(pygame.transform.rotate(pygame.transform.scale(bg_sprite[1], (200, 100)), 2), (70, 570))
             self.display.blit(
                 pygame.transform.flip(pygame.transform.rotate(pygame.transform.scale(bg_sprite[1], (200, 100)), 2),
@@ -284,6 +284,15 @@ class Game:
             self.draw_text(300 - self.game_time, 512, 20, 50, 0, 0, 0)  # 300 --> total game time
 
             for word_id in self.word_mem:
+                if len(self.word_mem[word_id].word) == 8:
+                    self.word_mem[word_id].text = self.word_mem[word_id].font.render(self.word_mem[word_id].word, True,
+                                                                                     (255, 180, 68))
+                if len(self.word_mem[word_id].word) == 10:
+                    self.word_mem[word_id].text = self.word_mem[word_id].font.render(self.word_mem[word_id].word, True,
+                                                                                     (255, 119, 0))
+                if len(self.word_mem[word_id].word) == 12:
+                    self.word_mem[word_id].text = self.word_mem[word_id].font.render(self.word_mem[word_id].word, True,
+                                                                                     (88, 0, 22))
                 if self.player_me.keystrokes == '':
                     s = False
                 else:
@@ -315,7 +324,7 @@ class Game:
             else:
                 self.msg = " ," + str(self.draw_state_me)
             self.ability_check()
-            self.bg_pos -= 1.15
+            self.bg_pos -= 0.65
             pygame.display.update()
 
     def result(self):
@@ -470,6 +479,7 @@ class Game:
         elif self.game_state == 2:
             self.draw_state_friend = int(game_data_list[2])
             self.game_time = int(game_data_list[3])
+            #self.ability_index = int(game_data_list[4])
             for player_id in player_data_dict:
                 self.player_dict[player_id].score = player_data_dict[player_id][0]
             for word_data in word_data_dict:
