@@ -231,7 +231,7 @@ class Game:
                 framerate = clock.tick(30)
                 with lock:
                     self.time = int((pygame.time.get_ticks() - start_ticks) / 1000)
-                    if self.time == 5:
+                    if self.time == 300:  #second
                         self.game_state = 3
                     frame_string = ""
                     for key in self.client_queues:
@@ -241,31 +241,32 @@ class Game:
                         except Empty as e:
                             pass
 
-                    if len(word_mem) <= 1:
+                    if len(word_mem) <= 1:  #ก่อนที่จะมีwordตกลงมา
                         timer.tick()
                     if timer.time >= 90:
                         timer.reset()
 
-                    if len(word_mem) <= 1:  #ก่อนที่จะมีwordตกลงมา
+                    if len(word_mem) <= 1:
                         timer.tick()
                     """if 2 == random.randint(1, 60):
                         self.add_new_word(word_mem)
                         ทุกframeที่เปลี่ยนไป จะมีการสุ่ม1ครั้ง
                     """
-                    if 2 == random.randint(1, 40):  #75% to get easy word
-                        self.add_easy_word(easy_mem)
-                    if 2 == random.randint(1, 150):  #20% to get hard word
-                        self.add_hard_word(hard_mem)
+                    # level easy
+                    if self.time > 0 or self.time <= 90:
+                        if 2 == random.randint(1, 40):  #75% to get easy word
+                            self.add_easy_word(word_mem)
+                        if 2 == random.randint(1, 150):  #20% to get hard word
+                            self.add_hard_word(word_mem)
+                    if self.time > 90 or self.time < 300:  #level hard
+                        if 2 == random.randint(1, 150):  #20% to get easy word
+                            self.add_easy_word(word_mem)
+                        if 2 == random.randint(1, 40):  #75% to get hard word
+                            self.add_hard_word(word_mem)
 
                     if len(word_mem) <= 1 and timer.time >= 90:  #ถ้าสุ่มไม่ได้ซักที ก็ให้มันตกลงมาเองเลย
                         self.add_new_word(word_mem)
                         timer.reset()
-
-                    word_mem = []  #all words falling on screen >> both easy and hard
-                    for easy in easy_mem:
-                        word_mem.append(easy)
-                    for hard in hard_mem:
-                        word_mem.append(hard)
 
                     removed_words = []  #อันที่ตกหน้าจอไปแล้ว
 
