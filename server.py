@@ -142,7 +142,8 @@ class Server:
                     else:
                         msg = str(game_id) + "," + str(current_game.game_state) + ":"
                         for key in current_game.players:
-                            msg += str(key) + "," + str(current_game.players[key].score) + "," + str(1 if current_game.players[key].play_again else 0) + "|"
+                            msg += str(key) + "," + str(current_game.players[key].score) + "," + str(
+                                1 if current_game.players[key].play_again else 0) + "|"
                         msg = msg[:-1]
                     conn.sendall(str.encode(msg))
             print(f'client thread {str(client_id)} released a lock')
