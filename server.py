@@ -231,7 +231,7 @@ class Game:
                 framerate = clock.tick(30)
                 with lock:
                     self.time = int((pygame.time.get_ticks() - start_ticks) / 1000)
-                    if self.time == 300:
+                    if self.time == 5:
                         self.game_state = 3
                     frame_string = ""
                     for key in self.client_queues:
@@ -252,12 +252,12 @@ class Game:
                     lottery_num = random.randint(1, 100)
 
                     if 2 == random.randint(1, 60):
-                        if 0 < self.time < 20:
+                        if 0 < self.time < 90:
                             if 0 < lottery_num < 80:
                                 self.add_easy_word(word_mem)
                             else:
                                 self.add_hard_word(word_mem)
-                        elif 20 < self.time < 300:
+                        elif 90 < self.time < 300:
                             if 0 < lottery_num < 80:
                                 self.add_hard_word(word_mem)
                             else:
@@ -372,6 +372,8 @@ class Game:
             self.players[key].action_index = 0
             self.players[key].ready = False
             self.players[key].play_again = False
+            with self.client_queues[key].mutex:
+                self.client_queues[key].queue.clear()
         self.play_again = False
         self.time = 0
         self.word_count = 0

@@ -59,6 +59,7 @@ class Game:
         self.removed_word_animation = []
         self.backspace_clock = Timer()
         self.ability_clock = Timer()
+        self.debuff_clock = Timer()
         self.black_clock = Timer()
         self.type_state = False
         self.mouse_pos = []
@@ -82,7 +83,7 @@ class Game:
         self.debuff_index = 0  # nothing
         self.ability_index = 0
 
-        self.debuff_state = 0 #hey
+        self.debuff_state = 0
         self.ability_state = 0
         """
         index = 0 ; no ability occurs
@@ -329,7 +330,10 @@ class Game:
                 self.msg = " ," + str(self.draw_state_me)
             if self.debuff_index != 0:
                 self.debuff_state = self.debuff_index
+            if self.ability_index != 0 :
+                self.ability_state = self.ability_index
             self.ability_check()
+            self.debuff_check()
             self.bg_pos -= 0.65
             pygame.display.update()
 
@@ -509,6 +513,8 @@ class Game:
             self.word_mem = {k: v for k, v in self.word_mem.items() if k in keys_to_keep}
 
         elif self.game_state == 3:
+            self.word_mem = {}
+            self.player_me.keystrokes = ''
             for player_id in player_data_dict:
                 self.player_dict[player_id].score = player_data_dict[player_id][0]
                 self.player_dict[player_id].play_again = player_data_dict[player_id][1]
@@ -542,33 +548,42 @@ class Game:
     Restart Message:
         [game_id, restart, : client_id, score, play_again | client_id, score, play_again]
     """
-
     def ability_check(self):
+        if self.ability_state == 1:
+            pass
+        elif self.ability_state == 2:
+            pass
+        elif self.ability_state == 3:
+            pass
+        else:
+            pass
+
+    def debuff_check(self):
         render_offset = [0, 0]
         if self.debuff_state == 1:
-            if self.ability_clock.time == 150:  # 5 seconds
+            if self.debuff_clock.time == 90:  # 3 seconds
                 self.debuff_state = 0
-                self.ability_clock.reset()
+                self.debuff_clock.reset()
             self.screen.blit(pygame.transform.flip(self.display, False, True), (0, 0))
-            self.ability_clock.tick()
+            self.debuff_clock.tick()
         elif self.debuff_state == 2:
-            if self.ability_clock.time == 150:  # 5 seconds
+            if self.debuff_clock.time == 150:  # 5 seconds
                 self.debuff_state = 0
-                self.ability_clock.reset()
-            render_offset[0] = random.randint(0, 8) - 4
-            render_offset[1] = random.randint(0, 8) - 4
+                self.debuff_clock.reset()
+            render_offset[0] = random.randint(0, 12) - 4
+            render_offset[1] = random.randint(0, 12) - 4
             self.screen.blit(self.display, render_offset)
-            self.ability_clock.tick()
+            self.debuff_clock.tick()
         elif self.debuff_state == 3:
-            if self.ability_clock.time == 150:  # 5 seconds
+            if self.debuff_clock.time == 90:  # 3 seconds
                 self.debuff_state = 0
-                self.ability_clock.reset()
-            if int(self.ability_clock.time/15) % 2 == 0:
+                self.debuff_clock.reset()
+            if int(self.debuff_clock.time/15) % 2 == 0:
                 self.display.blit(pygame.transform.scale(bg_sprite[15], (self.width, self.height)), (0, 0))
             else:
                 self.display.blit(pygame.transform.scale(bg_sprite[16], (self.width, self.height)), (0, 0))
             self.screen.blit(self.display, (0, 0))
-            self.ability_clock.tick()
+            self.debuff_clock.tick()
         else:
             self.screen.blit(self.display, (0, 0))
 
