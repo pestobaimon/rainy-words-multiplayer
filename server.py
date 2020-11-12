@@ -2,7 +2,7 @@ import random
 import socket
 import threading
 from queue import *
-
+from time import time as _time, sleep as _sleep
 import pygame
 
 from timer import Timer
@@ -32,7 +32,7 @@ class Player:
 class Server:
     HEADER = 64
     PORT = 5050
-    SERVER = "192.168.1.37"
+    SERVER = "25.40.56.186"
     ADDR = (SERVER, PORT)
     FORMAT = 'utf-8'
     DISCONNECT_MESSAGE = "!DISCONNECT"
@@ -92,7 +92,7 @@ class Server:
                 conn.sendall(str.encode("Receiving data empty. Disconnecting"))
                 print(f'disconnected from {addr} ')
                 break
-            print('reply', reply)
+            # print('reply', reply)
             client_data_arr = reply.split(",")
             rcv_game_id = int(client_data_arr[0])
             rcv_id = int(client_data_arr[1])
@@ -103,7 +103,7 @@ class Server:
                 print(f'disconnected from {addr} ')
                 break
             with lock:
-                print(f'client thread {str(client_id)} got a lock')
+                # print(f'client thread {str(client_id)} got a lock')
                 if current_game.game_state == 0:
                     if rcv_game_state == current_game.game_state:
                         name = str(client_data_arr[3])
@@ -118,7 +118,7 @@ class Server:
                     msg = str(game_id) + "," + str(current_game.game_state) + "," + current_game.countdown + "," + \
                           current_game.players[
                               get_opponent(client_id)].name
-                    print("msg_1", msg)
+                    # print("msg_1", msg)
                     conn.sendall(str.encode(msg))
                 elif current_game.game_state == 2:
                     if rcv_game_state == current_game.game_state:
@@ -132,11 +132,11 @@ class Server:
                           + str(current_game.time) + ":" + current_game.frame_string
                     current_game.players[client_id].ability = 0
                     current_game.players[client_id].debuff = 0
-                    print('msg_2', msg)
+                    # print('msg_2', msg)
                     conn.sendall(str.encode(msg))
                 elif current_game.game_state == 3:
                     if rcv_game_state == current_game.game_state:
-                        print('END')
+                        # print('END')
                         play_again = True if int(client_data_arr[3]) == 1 else False
                         recv_q.put([client_id, play_again])
                     if current_game.play_again:
@@ -152,7 +152,8 @@ class Server:
                                 1 if current_game.players[key].play_again else 0) + "|"
                         msg = msg[:-1]
                     conn.sendall(str.encode(msg))
-            print(f'client thread {str(client_id)} released a lock')
+            # print(f'client thread {str(client_id)} released a lock')
+        conn.sendall(str.encode("DISCONNECT"))
 
     def run_game_serve(self):
         self.server.listen()
@@ -200,6 +201,8 @@ class Server:
                         self.games[int(key[0])].stop = True
                 for key in client_thread_to_remove:
                     self.client_threads.pop(key)
+            _sleep(0.1)
+
 
 class Game:
     def __init__(self, game_id, players):
@@ -229,9 +232,9 @@ class Game:
                         all_ready = all_ready and self.players[key].ready
                     if all_ready:
                         with lock:
-                            print('game room got a lock')
+                            # print('game room got a lock')
                             self.game_state = 1
-                            print('game room released a lock')
+                            # print('game room released a lock')
 
             start_ticks = pygame.time.get_ticks()
             while self.game_state == 1:
@@ -242,19 +245,19 @@ class Game:
                 self.countdown = str(seconds)
                 if seconds <= 0:
                     with lock:
-                        print('game room got a lock')
+                        # print('game room got a lock')
                         self.game_state = 2
                         for key in self.players:
                             client_string = str(key) + "," + str(self.players[key].score) + "|"
                             self.frame_string += client_string
                         self.frame_string = self.frame_string[:-1] + ":"
-                        print('game room released a lock')
+                        # print('game room released a lock')
 
             word_mem = []
 
             timer = Timer()
             start_ticks = pygame.time.get_ticks()
-            print('game room got a lock')
+            # print('game room got a lock')
             while self.game_state == 2:
                 if self.stop:
                     break
@@ -318,7 +321,6 @@ class Game:
                             for client_id in self.players:
                                 if self.players[client_id].word_submit != " ":
                                     if (self.players[client_id].word_submit == word.word) and (not word.disabled):
-                                        print("GAY: " + str(len(word.word)))
                                         """
                                         if 7 <= len(word.word) <= 8:
                                             self.players[client_id].ability = 1
@@ -339,7 +341,7 @@ class Game:
                                             self.players[client_id].ability = bamboozle
                                             self.players[get_opponent(client_id)].debuff = bamboozle
                                         self.players[client_id].score += 1
-                                        print('plus')
+                                        # print('plus')
                                         word.disable()
                                         removed_words.append(word)
                                     else:
@@ -376,10 +378,10 @@ class Game:
                 for key in self.players:
                     self.play_again = self.play_again and self.players[key].play_again
                 if self.play_again:
-                    print('game room got a lock')
+                    # print('game room got a lock')
                     self.game_state = 1
                     self.reset_data()
-                    print('game room released a lock')
+                    # print('game room released a lock')
 
     @staticmethod
     def move_word(w):
@@ -417,7 +419,7 @@ class Game:
     def sync_data(self, client_input):
         if self.game_state == 0:
             self.players[client_input[0]].name = client_input[1]
-            print('client input', client_input)
+            # print('client input', client_input)
         if self.game_state == 2:
             self.players[client_input[0]].word_submit = client_input[1]
             self.players[client_input[0]].action_index = client_input[2]
