@@ -29,7 +29,7 @@ class Player:
 class Server:
     HEADER = 64
     PORT = 5050
-    SERVER = "192.168.1.40"
+    SERVER = "10.105.145.113"
     ADDR = (SERVER, PORT)
     FORMAT = 'utf-8'
     DISCONNECT_MESSAGE = "!DISCONNECT"
@@ -128,7 +128,7 @@ class Server:
                         word_submit = str(client_data_arr[3])
                         action_index = int(client_data_arr[4])
                         recv_q.put([client_id, word_submit, action_index])
-                    msg = str(game_id) + "," + str(current_game.game_state) + "," + str(current_game.players[get_opponent(client_id)].action_index) + "," + str(current_game.time) + ","+ str(current_game.players[get_opponent(client_id)].ability_index) + ":" + current_game.frame_string
+                    msg = str(game_id) + "," + str(current_game.game_state) + "," + str(current_game.players[get_opponent(client_id)].action_index) + "," + str(current_game.time) + "," + str(current_game.players[get_opponent(client_id)].ability_index) + ":" + current_game.frame_string
                     print('msg_2', msg)
                     conn.sendall(str.encode(msg))
                 elif current_game.game_state == 3:
@@ -230,11 +230,14 @@ class Game:
             word_mem = []
             timer = Timer()
             start_ticks = pygame.time.get_ticks()
-            print('game room got a lock')
+
             while self.game_state == 2:  #playing
                 framerate = clock.tick(30)
                 with lock:
+                    print(f'game room got a lock state = {self.game_state}')
                     self.time = int((pygame.time.get_ticks() - start_ticks) / 1000)
+                    print("start ticks", start_ticks)
+                    print("now ticks", pygame.time.get_ticks())
                     if self.time == 300:  #second
                         self.game_state = 3
                     frame_string = ""
@@ -247,7 +250,7 @@ class Game:
 
                     if len(word_mem) <= 1:  #ก่อนที่จะมีwordตกลงมา
                         timer.tick()
-                    if timer.time >= 90:
+                    if timer.time >= 90:  #timeout timer
                         timer.reset()
 
                     if len(word_mem) <= 1:
@@ -256,12 +259,16 @@ class Game:
                         self.add_new_word(word_mem)
                         ทุกframeที่เปลี่ยนไป จะมีการสุ่ม1ครั้ง
                     """
-                    if self.time > 0 or self.time <= 90:  # level easy
+                    print(f"time = {self.time}")
+                    if 0 < self.time <= 90:  # level easy
+                        print("easy")
                         if 2 == random.randint(1, 40):  #75% to get easy word
                             self.add_easy_word(word_mem)
+                            print("easy added")
                         if 2 == random.randint(1, 150):  #20% to get hard word
                             self.add_hard_word(word_mem)
-                    if self.time > 90 or self.time < 300:  #level hard
+                            print("hard added")
+                    elif 90 < self.time < 300:  #level hard
                         if 2 == random.randint(1, 150):  #20% to get easy word
                             self.add_easy_word(word_mem)
                         if 2 == random.randint(1, 40):  #75% to get hard word
@@ -309,7 +316,7 @@ class Game:
                         client_string = str(key) + "," + str(self.players[key].score) + "|"
                         frame_string += client_string
                     frame_string = frame_string[:-1] + ":"
-                    for word in word_mem:  #ของแต่ละword
+                    for word in word_mem:  #ของแต่ละword >> ต้องส่งidของeasyกับhardแทนรึเปล่างี้??
                         word_string = str(word.id) + "," + str(word.word_code) + "," + str(word.fall_speed) + "," + str(
                             word.text_rect.topleft[0]) + "," + str(word.text_rect.topleft[1]) + "|"
                         frame_string += word_string
