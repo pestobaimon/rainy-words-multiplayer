@@ -6,12 +6,15 @@ from word_library import *
 class Word:
 
     def __init__(self, word_id, word_code, fall_speed, x_pos, y_pos):
+        if self.word_code[0] == 'e':
+            self.word = easy_word[word_code]
+        elif self.word_code[0] == 'h':
+            self.word = hard_word[word_code]
+
         self.x_pos = int(x_pos)
         self.y_pos = int(y_pos)
         self.font = pygame.font.Font('freesansbold.ttf', 32)
         self.start_match = False
-        self.word_code = word_code
-        self.word = ""
         self.fall_speed = int(fall_speed)
         self.text_width, self.text_height = self.font.size(self.word)
         self.matching_text = self.font.render("", True, pygame.Color('black'))

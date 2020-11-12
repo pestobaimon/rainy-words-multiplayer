@@ -257,26 +257,42 @@ class Game:
                         ทุกframeที่เปลี่ยนไป จะมีการสุ่ม1ครั้ง
                     """
                     print(f"time = {self.time}")
-                    if 0 < self.time <= 90:  # level easy
-                        print("easy")
-                        if 2 == random.randint(1, 10):  #75% to get easy word
-                            print("easy added")
-                            self.add_easy_word(word_mem)
+                    lottery = random.randint(1, 100)
 
-                        if 2 == random.randint(1, 50):  #20% to get hard word
-                            self.add_hard_word(word_mem)
-                            print("hard added")
-                    elif 90 < self.time < 300:  #level hard
-                        if 2 == random.randint(1, 150):  #20% to get easy word
-                            self.add_easy_word(word_mem)
-                        if 2 == random.randint(1, 40):  #75% to get hard word
-                            self.add_hard_word(word_mem)
+                    if 2 == random.randint(1, 50):  #have a chance to fall
+                        if 0 < self.time <= 90:  # level easy
+                            if 0 < lottery < 80:  #80% to get easy word
+                                print("easy added")
+                                self.add_easy_word(word_mem)
+                            elif 80 < lottery < 100:  #20% to get hard word
+                                self.add_hard_word(word_mem)
+                                print("hard added")
+                        elif 90 < self.time < 300:  # level hard
+                            if 0 < lottery < 80:  #80% to get hard word
+                                print("hard added")
+                                self.add_hard_word(word_mem)
+                            elif 80 < lottery < 100:  #20% to get easy word
+                                self.add_easy_word(word_mem)
+                                print("easy added")
 
                     for word in word_mem:
                         print(f"word = {word.word}")
 
                     if len(word_mem) <= 1 and timer.time >= 90:  #ถ้าสุ่มไม่ได้ซักที ก็ให้มันตกลงมาเองเลย
-                        self.add_new_word(word_mem)
+                        if 0 < self.time <= 90:  # level easy
+                            if 0 < lottery < 80:  #80% to get easy word
+                                print("easy added")
+                                self.add_easy_word(word_mem)
+                            elif 80 < lottery < 100:  #20% to get hard word
+                                self.add_hard_word(word_mem)
+                                print("hard added")
+                        elif 90 < self.time < 300:  # level hard
+                            if 0 < lottery < 80:  #80% to get hard word
+                                print("hard added")
+                                self.add_hard_word(word_mem)
+                            elif 80 < lottery < 100:  #20% to get easy word
+                                self.add_easy_word(word_mem)
+                                print("easy added")
                         print("timeout")
                         timer.reset()
 

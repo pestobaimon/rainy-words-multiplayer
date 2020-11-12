@@ -16,7 +16,7 @@ for key in word_set:
 
 # print(easy_word)  #amount of easy word
 # print(j)  #amount of hard word
-
+"""
 moving_set = {}
 black_screen_set = {}
 mirror_screen = {}
@@ -33,6 +33,8 @@ for key in word_set:
     if len(word_set[key]) == 12:
         mirror_screen[r] = word_set[key]
         r += 1
+"""
+
 
 
 # print(moving_set)
