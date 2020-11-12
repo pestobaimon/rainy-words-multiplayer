@@ -79,7 +79,11 @@ class Game:
         self.cd_sound.set_volume(0.1)
 
         # game ability
-        self.ability_index = 3  # nothing
+        self.debuff_index = 0  # nothing
+        self.ability_index = 0
+
+        self.debuff_state = 0 #hey
+        self.ability_state = 0
         """
         index = 0 ; no ability occurs
         index = 1 ; screen flip
@@ -284,13 +288,13 @@ class Game:
             self.draw_text(300 - self.game_time, 512, 20, 50, 0, 0, 0)  # 300 --> total game time
 
             for word_id in self.word_mem:
-                if len(self.word_mem[word_id].word) == 8:
+                if 7 <= len(self.word_mem[word_id].word) <= 8:
                     self.word_mem[word_id].text = self.word_mem[word_id].font.render(self.word_mem[word_id].word, True,
                                                                                      (255, 180, 68))
-                if len(self.word_mem[word_id].word) == 10:
+                if 9 <= len(self.word_mem[word_id].word) <= 11:
                     self.word_mem[word_id].text = self.word_mem[word_id].font.render(self.word_mem[word_id].word, True,
                                                                                      (255, 119, 0))
-                if len(self.word_mem[word_id].word) == 12:
+                if 12 <= len(self.word_mem[word_id].word) <= 13:
                     self.word_mem[word_id].text = self.word_mem[word_id].font.render(self.word_mem[word_id].word, True,
                                                                                      (88, 0, 22))
                 if self.player_me.keystrokes == '':
@@ -323,6 +327,8 @@ class Game:
                 self.player_me.confirm_key = False
             else:
                 self.msg = " ," + str(self.draw_state_me)
+            if self.debuff_index != 0:
+                self.debuff_state = self.debuff_index
             self.ability_check()
             self.bg_pos -= 0.65
             pygame.display.update()
@@ -478,8 +484,9 @@ class Game:
 
         elif self.game_state == 2:
             self.draw_state_friend = int(game_data_list[2])
-            self.game_time = int(game_data_list[3])
-            #self.ability_index = int(game_data_list[4])
+            self.ability_index = int(game_data_list[3])
+            self.debuff_index = int(game_data_list[4])
+            self.game_time = int(game_data_list[5])
             for player_id in player_data_dict:
                 self.player_dict[player_id].score = player_data_dict[player_id][0]
             for word_data in word_data_dict:
@@ -538,23 +545,23 @@ class Game:
 
     def ability_check(self):
         render_offset = [0, 0]
-        if self.ability_index == 1:
+        if self.debuff_state == 1:
             if self.ability_clock.time == 150:  # 5 seconds
-                self.ability_index = 0
+                self.debuff_state = 0
                 self.ability_clock.reset()
             self.screen.blit(pygame.transform.flip(self.display, False, True), (0, 0))
             self.ability_clock.tick()
-        elif self.ability_index == 2:
+        elif self.debuff_state == 2:
             if self.ability_clock.time == 150:  # 5 seconds
-                self.ability_index = 0
+                self.debuff_state = 0
                 self.ability_clock.reset()
             render_offset[0] = random.randint(0, 8) - 4
             render_offset[1] = random.randint(0, 8) - 4
             self.screen.blit(self.display, render_offset)
             self.ability_clock.tick()
-        elif self.ability_index == 3:
+        elif self.debuff_state == 3:
             if self.ability_clock.time == 150:  # 5 seconds
-                self.ability_index = 0
+                self.debuff_state = 0
                 self.ability_clock.reset()
             if int(self.ability_clock.time/15) % 2 == 0:
                 self.display.blit(pygame.transform.scale(bg_sprite[15], (self.width, self.height)), (0, 0))

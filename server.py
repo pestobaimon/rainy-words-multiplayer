@@ -288,28 +288,26 @@ class Game:
                             for client_id in self.players:
                                 if self.players[client_id].word_submit != " ":
                                     if (self.players[client_id].word_submit == word.word) and (not word.disabled):
-                                        self.players[client_id].score += 1
-                                        print('plus')
-                                        word.disable()
-                                        removed_words.append(word)
-                                    else:
-                                        print(self.players[client_id].word_submit + "!=" + word.word)
-
-                            for client_id in self.players:
-                                if self.players[client_id].word_submit != " ":
-                                    if (self.players[client_id].word_submit == word.word) and (not word.disabled):
+                                        print("GAY: "+str(len(word.word)))
+                                        """
                                         if 7 <= len(word.word) <= 8:
-                                            self.players[client_id].debuff = 1
+                                            self.players[client_id].ability = 1
                                             self.players[get_opponent(client_id)].debuff = 1
                                         elif 9 <= len(word.word) <= 11:
-                                            self.players[client_id].debuff = 2
+                                            self.players[client_id].ability = 2
                                             self.players[get_opponent(client_id)].debuff = 2
                                         elif 12 <= len(word.word) <= 13:
-                                            self.players[client_id].debuff = 3
+                                            self.players[client_id].ability = 3
                                             self.players[get_opponent(client_id)].debuff = 3
                                         elif len(word.word) > 13:
-                                            self.players[client_id].debuff = 1
+                                            self.players[client_id].ability = 1
                                             self.players[get_opponent(client_id)].debuff = 1
+                                        self.players[client_id].score += 1
+                                        """
+                                        if len(word.word) >= 7:
+                                            bamboozle = random.randint(1, 3)
+                                            self.players[client_id].ability = bamboozle
+                                            self.players[get_opponent(client_id)].debuff = bamboozle
                                         self.players[client_id].score += 1
                                         print('plus')
                                         word.disable()
