@@ -7,10 +7,11 @@ from queue import *
 import pygame
 
 from timer import Timer
-from word_library import word_set
+from word_library import easy_word_set, hard_word_set
 from words_server import Word
 
 lock = threading.Lock()
+
 
 class Player:
     def __init__(self, name, player_id, game_id):
@@ -240,10 +241,32 @@ class Game:
 
                     if len(word_mem) <= 1:
                         timer.tick()
+
+                    lottery_num = random.randint(1, 100)
+
                     if 2 == random.randint(1, 60):
-                        self.add_new_word(word_mem)
+                        if 0 < self.time < 20:
+                            if 0 < lottery_num < 80:
+                                self.add_easy_word(word_mem)
+                            else:
+                                self.add_hard_word(word_mem)
+                        elif 20 < self.time < 300:
+                            if 0 < lottery_num < 80:
+                                self.add_hard_word(word_mem)
+                            else:
+                                self.add_easy_word(word_mem)
+
                     if len(word_mem) <= 1 and timer.time >= 90:
-                        self.add_new_word(word_mem)
+                        if 0 < self.time < 20:
+                            if 0 < lottery_num < 80:
+                                self.add_easy_word(word_mem)
+                            elif 80 < lottery_num < 100:
+                                self.add_hard_word(word_mem)
+                        elif 20 < self.time < 300:
+                            if 0 < lottery_num < 80:
+                                self.add_hard_word(word_mem)
+                            elif 80 < lottery_num < 100:
+                                self.add_easy_word(word_mem)
                         timer.reset()
 
                     removed_words = []
@@ -304,15 +327,28 @@ class Game:
     def move_word(w):
         w.text_rect.move_ip(0, w.fall_speed)
 
-    def add_new_word(self, word_mem):
-        key = random.choice(list(word_set.keys()))
+    def add_easy_word(self, word_mem):
+        key = random.choice(list(easy_word_set.keys()))
         word_mem.append(Word(self.word_count, key))
         self.word_count += 1
-        return word_set[key]
+        return easy_word_set[key]
+
+    def add_hard_word(self, word_mem):
+        key = random.choice(list(hard_word_set.keys()))
+        word_mem.append(Word(self.word_count, key))
+        self.word_count += 1
+        return hard_word_set[key]
 
     @staticmethod
-    def parse_data(self, data):
-        pass
+    def parse_data(self, game_state, data):
+        if game_state == 0:
+            pass
+        elif game_state == 1:
+            pass
+        elif game_state == 2:
+            pass
+        elif game_state == 3:
+            pass
 
     def reset_data(self):
         for key in self.players:

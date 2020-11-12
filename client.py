@@ -418,7 +418,7 @@ class Game:
                     self.word_mem[word_data].text_rect.topleft = (x, y)
                 else:
                     self.word_mem[word_data] = Word(int(word_data_dict[word_data][0]),
-                                                    int(word_data_dict[word_data][1]),
+                                                    word_data_dict[word_data][1],
                                                     int(word_data_dict[word_data][2]),
                                                     int(word_data_dict[word_data][3]),
                                                     int(word_data_dict[word_data][4]))

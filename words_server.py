@@ -1,15 +1,19 @@
 import random
 import pygame
-from word_library import word_set
+from word_library import easy_word_set, hard_word_set
 
 
 class Word:
 
     def __init__(self, word_id, word_code):
+        if word_code[0] == 'e':
+            self.word = easy_word_set[word_code]
+        elif word_code[0] == 'h':
+            self.word = hard_word_set[word_code]
+
         self.font = pygame.font.Font('freesansbold.ttf', 32)
         self.start_match = False
         self.fall_speed = random.randint(4, 8)
-        self.word = word_set[word_code]
         self.word_code = word_code
         self.text_width, self.text_height = self.font.size(self.word)
         self.x_offset = random.randint(0, 1024 - self.text_width)
@@ -20,6 +24,7 @@ class Word:
         self.text_rect.topleft = (self.x_offset, -50)
         self.disabled = False
         self.id = word_id
+
 
     def match_text(self, span):
         start, end = span
