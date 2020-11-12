@@ -10,7 +10,8 @@ from word_library import easy_word_set, hard_word_set
 from words_server import Word
 
 lock = threading.Lock()
-lock_server = threading.Lock()
+server_lock = threading.Lock()
+server_check = threading.Event()
 
 
 class Player:
@@ -161,37 +162,39 @@ class Server:
         client_id = 0
         pygame.init()
         game_id = 0
-        server_manager = threading.Thread(target=self.server_manager)
-        server_manager.start()
+        # server_manager = threading.Thread(target=self.server_manager)
+        # server_manager.start()
         while True:
 
             conn, addr = self.server.accept()
             curr_key = str(game_id) + str(client_id)
-            with lock_server:
-                self.client_threads[curr_key] = threading.Thread(target=self.handle_client, args=(conn, addr, client_id, game_id))
-                if client_id == 0:
-                    self.games[game_id] = Game(game_id, {})
-                    print('opened room', game_id)
-                    self.games[game_id].players[client_id] = Player('', client_id, game_id)
-                    print('Added player', client_id, 'to', 'room', game_id)
-                    self.games[game_id].client_queues[client_id] = Queue()
-                    self.game_threads[game_id] = threading.Thread(target=self.games[game_id].run_game_room)
-                    self.game_threads[game_id].start()
-                    client_id += 1
-                elif client_id == 1:
-                    self.games[game_id].players[client_id] = Player('', client_id, game_id)
-                    print('Added player', client_id, 'to', 'room', game_id)
-                    self.games[game_id].client_queues[client_id] = Queue()
-                    game_id += 1
-                    client_id = 0
-                self.client_threads[curr_key].start()
-
-            print(f"[ACTIVE CONNECTIONS] {threading.activeCount() - 1 - len(self.games)}")
+            # with server_lock:
+            self.client_threads[curr_key] = threading.Thread(target=self.handle_client, args=(conn, addr, client_id, game_id))
+            if client_id == 0:
+                self.games[game_id] = Game(game_id, {})
+                print('opened room', game_id)
+                self.games[game_id].players[client_id] = Player('', client_id, game_id)
+                print('Added player', client_id, 'to', 'room', game_id)
+                self.games[game_id].client_queues[client_id] = Queue()
+                self.game_threads[game_id] = threading.Thread(target=self.games[game_id].run_game_room)
+                self.game_threads[game_id].start()
+                client_id += 1
+            elif client_id == 1:
+                self.games[game_id].players[client_id] = Player('', client_id, game_id)
+                print('Added player', client_id, 'to', 'room', game_id)
+                self.games[game_id].client_queues[client_id] = Queue()
+                game_id += 1
+                client_id = 0
+            self.client_threads[curr_key].start()
+            # server_check.set()
+            # server_check.clear()
+            print(f"[ACTIVE CONNECTIONS] {threading.activeCount() - 1 - len(self.client_threads)}")
 
     def server_manager(self):
         while True:
             client_thread_to_remove = []
-            with lock_server:
+            server_check.wait()
+            with server_lock:
                 for key in self.client_threads:
                     if not self.client_threads[key].is_alive():
                         print(f"client thread {key} is DEAD")
@@ -201,7 +204,6 @@ class Server:
                         self.games[int(key[0])].stop = True
                 for key in client_thread_to_remove:
                     self.client_threads.pop(key)
-            _sleep(0.1)
 
 
 class Game:
