@@ -231,7 +231,7 @@ class Game:
                 framerate = clock.tick(30)
                 with lock:
                     self.time = int((pygame.time.get_ticks() - start_ticks) / 1000)
-                    if self.time == 5:
+                    if self.time == 300:
                         self.game_state = 3
                     frame_string = ""
                     for key in self.client_queues:

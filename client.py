@@ -334,7 +334,7 @@ class Game:
                 self.ability_state = self.ability_index
             self.ability_check()
             self.debuff_check()
-            self.bg_pos -= 0.65
+            self.bg_pos -= 0.62
             pygame.display.update()
 
     def result(self):
@@ -550,11 +550,26 @@ class Game:
     """
     def ability_check(self):
         if self.ability_state == 1:
-            pass
+            if self.ability_clock.time == 60:
+                self.ability_state = 0
+                self.ability_clock.reset()
+            self.draw_text("get flipped!",275,450,35,200,0,0)
+            self.draw_text("ngaeee!",870,450,35,200,0,0)
+            self.ability_clock.tick()
         elif self.ability_state == 2:
-            pass
+            if self.ability_clock.time == 60:
+                self.ability_state = 0
+                self.ability_clock.reset()
+            self.draw_text("get shake!", 275, 450, 35, 200, 0, 0)
+            self.draw_text("awawa!", 870, 450, 35, 200, 0, 0)
+            self.ability_clock.tick()
         elif self.ability_state == 3:
-            pass
+            if self.ability_clock.time == 60:
+                self.ability_state = 0
+                self.ability_clock.reset()
+            self.draw_text("get hacked!", 275, 450, 35, 200, 0, 0)
+            self.draw_text("uyahhh", 870, 450, 35, 200, 0, 0)
+            self.ability_clock.tick()
         else:
             pass
 
