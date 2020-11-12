@@ -24,6 +24,7 @@ class Player:
         self.ready = False
         self.play_again = False
         self.debuff = 0
+        self.ability = 0
 
 
 class Server:
@@ -126,7 +127,7 @@ class Server:
                           + "," + str(current_game.players[client_id].ability) + "," \
                           + str(current_game.players[client_id].debuff) + "," \
                           + str(current_game.time) + ":" + current_game.frame_string
-                    current_game.players[client_id].ability = 0 
+                    current_game.players[client_id].ability = 0
                     current_game.players[client_id].debuff = 0
                     print('msg_2', msg)
                     conn.sendall(str.encode(msg))
