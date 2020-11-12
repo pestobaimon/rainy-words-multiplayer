@@ -1,16 +1,16 @@
 import random
 import socket
 import threading
-import time
 from queue import *
 
 import pygame
 
 from timer import Timer
-from word_library import word_set
+from word_library import easy_word_set, hard_word_set
 from words_server import Word
 
 lock = threading.Lock()
+
 
 class Player:
     def __init__(self, name, player_id, game_id):
@@ -23,6 +23,8 @@ class Player:
         self.action_index = 0
         self.ready = False
         self.play_again = False
+        self.debuff = 0
+        self.ability = 0
 
 
 class Server:
@@ -41,7 +43,6 @@ class Server:
             print('error', str(e))
         self.games = {}
 
-
     """
     Stage 0:
     client data format
@@ -59,7 +60,7 @@ class Server:
     client data format: 
     [game_id, client_id, client_game_state, word_submit, action_index] 
     server data format: 
-    [game_id, game_state, opponent_action_index, time_seconds : client_id, score | client_id,score : word_id,
+    [game_id, game_state, opponent_action_index, ability, debuff, time_seconds : client_id, score | client_id,score : word_id,
     word_code,fall_speed,x_pos,y_pos | word_id,word_code,fall_speed,x_pos,y_pos | , ....] 
 
     Stage 3:
@@ -121,7 +122,13 @@ class Server:
                         word_submit = str(client_data_arr[3])
                         action_index = int(client_data_arr[4])
                         recv_q.put([client_id, word_submit, action_index])
-                    msg = str(game_id) + "," + str(current_game.game_state) + "," + str(current_game.players[get_opponent(client_id)].action_index) + "," + str(current_game.time) + ":" + current_game.frame_string
+                    msg = str(game_id) + "," + str(current_game.game_state) + "," \
+                          + str(current_game.players[get_opponent(client_id)].action_index) \
+                          + "," + str(current_game.players[client_id].ability) + "," \
+                          + str(current_game.players[client_id].debuff) + "," \
+                          + str(current_game.time) + ":" + current_game.frame_string
+                    current_game.players[client_id].ability = 0
+                    current_game.players[client_id].debuff = 0
                     print('msg_2', msg)
                     conn.sendall(str.encode(msg))
                 elif current_game.game_state == 3:
@@ -138,7 +145,8 @@ class Server:
                     else:
                         msg = str(game_id) + "," + str(current_game.game_state) + ":"
                         for key in current_game.players:
-                            msg += str(key) + "," + str(current_game.players[key].score) + "," + str(1 if current_game.players[key].play_again else 0) + "|"
+                            msg += str(key) + "," + str(current_game.players[key].score) + "," + str(
+                                1 if current_game.players[key].play_again else 0) + "|"
                         msg = msg[:-1]
                     conn.sendall(str.encode(msg))
             print(f'client thread {str(client_id)} released a lock')
@@ -230,7 +238,7 @@ class Game:
                         try:
                             x = self.client_queues[key].get_nowait()
                             self.sync_data(x)
-                        except Empty as e:
+                        except Empty:
                             pass
 
                     if len(word_mem) <= 1:
@@ -240,10 +248,32 @@ class Game:
 
                     if len(word_mem) <= 1:
                         timer.tick()
+
+                    lottery_num = random.randint(1, 100)
+
                     if 2 == random.randint(1, 60):
-                        self.add_new_word(word_mem)
+                        if 0 < self.time < 20:
+                            if 0 < lottery_num < 80:
+                                self.add_easy_word(word_mem)
+                            else:
+                                self.add_hard_word(word_mem)
+                        elif 20 < self.time < 300:
+                            if 0 < lottery_num < 80:
+                                self.add_hard_word(word_mem)
+                            else:
+                                self.add_easy_word(word_mem)
+
                     if len(word_mem) <= 1 and timer.time >= 90:
-                        self.add_new_word(word_mem)
+                        if 0 < self.time < 20:
+                            if 0 < lottery_num < 80:
+                                self.add_easy_word(word_mem)
+                            elif 80 < lottery_num < 100:
+                                self.add_hard_word(word_mem)
+                        elif 20 < self.time < 300:
+                            if 0 < lottery_num < 80:
+                                self.add_hard_word(word_mem)
+                            elif 80 < lottery_num < 100:
+                                self.add_easy_word(word_mem)
                         timer.reset()
 
                     removed_words = []
@@ -258,6 +288,28 @@ class Game:
                             for client_id in self.players:
                                 if self.players[client_id].word_submit != " ":
                                     if (self.players[client_id].word_submit == word.word) and (not word.disabled):
+                                        self.players[client_id].score += 1
+                                        print('plus')
+                                        word.disable()
+                                        removed_words.append(word)
+                                    else:
+                                        print(self.players[client_id].word_submit + "!=" + word.word)
+
+                            for client_id in self.players:
+                                if self.players[client_id].word_submit != " ":
+                                    if (self.players[client_id].word_submit == word.word) and (not word.disabled):
+                                        if 7 <= len(word.word) <= 8:
+                                            self.players[client_id].debuff = 1
+                                            self.players[get_opponent(client_id)].debuff = 1
+                                        elif 9 <= len(word.word) <= 11:
+                                            self.players[client_id].debuff = 2
+                                            self.players[get_opponent(client_id)].debuff = 2
+                                        elif 12 <= len(word.word) <= 13:
+                                            self.players[client_id].debuff = 3
+                                            self.players[get_opponent(client_id)].debuff = 3
+                                        elif len(word.word) > 13:
+                                            self.players[client_id].debuff = 1
+                                            self.players[get_opponent(client_id)].debuff = 1
                                         self.players[client_id].score += 1
                                         print('plus')
                                         word.disable()
@@ -288,7 +340,7 @@ class Game:
                     try:
                         x = self.client_queues[key].get_nowait()
                         self.sync_data(x)
-                    except Empty as e:
+                    except Empty:
                         pass
                 self.play_again = True
                 for key in self.players:
@@ -299,20 +351,21 @@ class Game:
                     self.reset_data()
                     print('game room released a lock')
 
-
     @staticmethod
     def move_word(w):
         w.text_rect.move_ip(0, w.fall_speed)
 
-    def add_new_word(self, word_mem):
-        key = random.choice(list(word_set.keys()))
+    def add_easy_word(self, word_mem):
+        key = random.choice(list(easy_word_set.keys()))
         word_mem.append(Word(self.word_count, key))
         self.word_count += 1
-        return word_set[key]
+        return easy_word_set[key]
 
-    @staticmethod
-    def parse_data(self, data):
-        pass
+    def add_hard_word(self, word_mem):
+        key = random.choice(list(hard_word_set.keys()))
+        word_mem.append(Word(self.word_count, key))
+        self.word_count += 1
+        return hard_word_set[key]
 
     def reset_data(self):
         for key in self.players:
