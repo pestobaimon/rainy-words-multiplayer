@@ -194,8 +194,6 @@ class Game:
         self.players = players
         self.time = 0
         self.client_queues = {}
-        self.easy_word_count = 0
-        self.hard_word_count = 0
 
     def run_game_room(self):
         clock = pygame.time.Clock()
@@ -249,12 +247,11 @@ class Game:
                             pass
 
                     if len(word_mem) <= 1:  #ก่อนที่จะมีwordตกลงมา
+                        print("word mem less than one")
                         timer.tick()
                     if timer.time >= 90:  #timeout timer
                         timer.reset()
 
-                    if len(word_mem) <= 1:
-                        timer.tick()
                     """if 2 == random.randint(1, 60):
                         self.add_new_word(word_mem)
                         ทุกframeที่เปลี่ยนไป จะมีการสุ่ม1ครั้ง
@@ -262,10 +259,11 @@ class Game:
                     print(f"time = {self.time}")
                     if 0 < self.time <= 90:  # level easy
                         print("easy")
-                        if 2 == random.randint(1, 40):  #75% to get easy word
-                            self.add_easy_word(word_mem)
+                        if 2 == random.randint(1, 10):  #75% to get easy word
                             print("easy added")
-                        if 2 == random.randint(1, 150):  #20% to get hard word
+                            self.add_easy_word(word_mem)
+
+                        if 2 == random.randint(1, 50):  #20% to get hard word
                             self.add_hard_word(word_mem)
                             print("hard added")
                     elif 90 < self.time < 300:  #level hard
@@ -274,8 +272,12 @@ class Game:
                         if 2 == random.randint(1, 40):  #75% to get hard word
                             self.add_hard_word(word_mem)
 
+                    for word in word_mem:
+                        print(f"word = {word.word}")
+
                     if len(word_mem) <= 1 and timer.time >= 90:  #ถ้าสุ่มไม่ได้ซักที ก็ให้มันตกลงมาเองเลย
                         self.add_new_word(word_mem)
+                        print("timeout")
                         timer.reset()
 
                     removed_words = []  #อันที่ตกหน้าจอไปแล้ว
@@ -353,14 +355,14 @@ class Game:
 
     def add_easy_word(self, word_mem):
         key = random.choice(list(easy_word.keys()))
-        word_mem.append(Word(self.easy_word_count, key))
-        self.easy_word_count += 1
+        word_mem.append(Word(self.word_count, key))
+        self.word_count += 1
         return easy_word[key]  #return one random word from easy_word set
 
     def add_hard_word(self, word_mem):
         key = random.choice(list(hard_word.keys()))
-        word_mem.append(Word(self.hard_word_count, key))
-        self.hard_word_count += 1
+        word_mem.append(Word(self.word_count, key))
+        self.word_count += 1
         return hard_word[key]
 
     @staticmethod
