@@ -1,3 +1,7 @@
-x = "hax"
+x = True
 
-print(x[0])
+y = x
+
+x = False
+
+print(y)

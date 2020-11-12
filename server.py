@@ -10,6 +10,7 @@ from word_library import easy_word_set, hard_word_set
 from words_server import Word
 
 lock = threading.Lock()
+lock_server = threading.Lock()
 
 
 class Player:
@@ -25,12 +26,13 @@ class Player:
         self.play_again = False
         self.debuff = 0
         self.ability = 0
+        self.connected = True
 
 
 class Server:
     HEADER = 64
     PORT = 5050
-    SERVER = "192.168.1.11"
+    SERVER = "192.168.1.37"
     ADDR = (SERVER, PORT)
     FORMAT = 'utf-8'
     DISCONNECT_MESSAGE = "!DISCONNECT"
@@ -42,6 +44,8 @@ class Server:
         except socket.error as e:
             print('error', str(e))
         self.games = {}
+        self.client_threads = {}
+        self.game_threads = {}
 
     """
     Stage 0:
@@ -78,10 +82,9 @@ class Server:
 
         print(f"[NEW CONNECTION] {addr} connected")
 
-        connected = True
         current_game = self.games[game_id]
         recv_q = current_game.client_queues[client_id]
-        while connected:
+        while self.games[game_id].players[client_id].connected:
 
             data = conn.recv(4096)
             reply = data.decode('utf-8')
@@ -157,28 +160,46 @@ class Server:
         client_id = 0
         pygame.init()
         game_id = 0
+        server_manager = threading.Thread(target=self.server_manager)
+        server_manager.start()
         while True:
+
             conn, addr = self.server.accept()
-            thread_client = threading.Thread(target=self.handle_client,
-                                             args=(conn, addr, client_id, game_id))
-            if client_id == 0:
-                self.games[game_id] = Game(game_id, {})
-                print('opened room', game_id)
-                self.games[game_id].players[client_id] = Player('', client_id, game_id)
-                print('Added player', client_id, 'to', 'room', game_id)
-                self.games[game_id].client_queues[client_id] = Queue()
-                thread_game = threading.Thread(target=self.games[game_id].run_game_room)
-                thread_game.start()
-                client_id += 1
-            elif client_id == 1:
-                self.games[game_id].players[client_id] = Player('', client_id, game_id)
-                print('Added player', client_id, 'to', 'room', game_id)
-                self.games[game_id].client_queues[client_id] = Queue()
-                game_id += 1
-                client_id = 0
-            thread_client.start()
+            curr_key = str(game_id) + str(client_id)
+            with lock_server:
+                self.client_threads[curr_key] = threading.Thread(target=self.handle_client, args=(conn, addr, client_id, game_id))
+                if client_id == 0:
+                    self.games[game_id] = Game(game_id, {})
+                    print('opened room', game_id)
+                    self.games[game_id].players[client_id] = Player('', client_id, game_id)
+                    print('Added player', client_id, 'to', 'room', game_id)
+                    self.games[game_id].client_queues[client_id] = Queue()
+                    self.game_threads[game_id] = threading.Thread(target=self.games[game_id].run_game_room)
+                    self.game_threads[game_id].start()
+                    client_id += 1
+                elif client_id == 1:
+                    self.games[game_id].players[client_id] = Player('', client_id, game_id)
+                    print('Added player', client_id, 'to', 'room', game_id)
+                    self.games[game_id].client_queues[client_id] = Queue()
+                    game_id += 1
+                    client_id = 0
+                self.client_threads[curr_key].start()
+
             print(f"[ACTIVE CONNECTIONS] {threading.activeCount() - 1 - len(self.games)}")
 
+    def server_manager(self):
+        while True:
+            client_thread_to_remove = []
+            with lock_server:
+                for key in self.client_threads:
+                    if not self.client_threads[key].is_alive():
+                        print(f"client thread {key} is DEAD")
+                        client_thread_to_remove.append(key)
+                        for client_id in self.games[int(key[0])].players:
+                            self.games[int(key[0])].players[client_id].connected = False
+                        self.games[int(key[0])].stop = True
+                for key in client_thread_to_remove:
+                    self.client_threads.pop(key)
 
 class Game:
     def __init__(self, game_id, players):
@@ -191,12 +212,17 @@ class Game:
         self.time = 0
         self.client_queues = {}
         self.play_again = False
+        self.stop = False
 
     def run_game_room(self):
         clock = pygame.time.Clock()
         running = True
         while running:
+            if self.stop:
+                break
             while self.game_state == 0:
+                if self.stop:
+                    break
                 all_ready = True
                 if len(self.players) == 2:
                     for key in self.players:
@@ -209,6 +235,8 @@ class Game:
 
             start_ticks = pygame.time.get_ticks()
             while self.game_state == 1:
+                if self.stop:
+                    break
                 framerate = clock.tick(30)
                 seconds = 10 - int((pygame.time.get_ticks() - start_ticks) / 1000)
                 self.countdown = str(seconds)
@@ -228,6 +256,8 @@ class Game:
             start_ticks = pygame.time.get_ticks()
             print('game room got a lock')
             while self.game_state == 2:
+                if self.stop:
+                    break
                 framerate = clock.tick(30)
                 with lock:
                     self.time = int((pygame.time.get_ticks() - start_ticks) / 1000)
@@ -288,7 +318,7 @@ class Game:
                             for client_id in self.players:
                                 if self.players[client_id].word_submit != " ":
                                     if (self.players[client_id].word_submit == word.word) and (not word.disabled):
-                                        print("GAY: "+str(len(word.word)))
+                                        print("GAY: " + str(len(word.word)))
                                         """
                                         if 7 <= len(word.word) <= 8:
                                             self.players[client_id].ability = 1
@@ -333,6 +363,8 @@ class Game:
                     self.frame_string = frame_string[:-1]
 
             while self.game_state == 3:
+                if self.stop:
+                    break
                 framerate = clock.tick(30)
                 for key in self.client_queues:
                     try:
@@ -358,6 +390,9 @@ class Game:
         word_mem.append(Word(self.word_count, key))
         self.word_count += 1
         return easy_word_set[key]
+
+    def stop_thread(self):
+        self.stop = True
 
     def add_hard_word(self, word_mem):
         key = random.choice(list(hard_word_set.keys()))
