@@ -1,6 +1,5 @@
-import random
 import pygame
-from word_library import easy_word_set, hard_word_set
+from server.word_library import easy_word_set, hard_word_set
 
 
 class Word:

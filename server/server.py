@@ -2,32 +2,18 @@ import random
 import socket
 import threading
 from queue import *
-from time import time as _time, sleep as _sleep
 import pygame
 
 from timer import Timer
 from word_library import easy_word_set, hard_word_set
 from words_server import Word
+from player import Player
+from functions import get_opponent
+
 
 lock = threading.Lock()
 server_lock = threading.Lock()
 server_check = threading.Event()
-
-
-class Player:
-    def __init__(self, name, player_id, game_id):
-        self.name = name
-        self.score = 0
-        self.word_submit = ''
-        self.status = 0
-        self.id = player_id
-        self.game_id = game_id
-        self.action_index = 0
-        self.ready = False
-        self.play_again = False
-        self.debuff = 0
-        self.ability = 0
-        self.connected = True
 
 
 class Server:
@@ -428,17 +414,3 @@ class Game:
         elif self.game_state == 3:
             if client_input[1] != ' ':
                 self.players[client_input[0]].play_again = int(client_input[1])
-
-
-def get_opponent(self_id):
-    if self_id == 1:
-        return 0
-    elif self_id == 0:
-        return 1
-    else:
-        return 'error'
-
-
-if __name__ == "__main__":
-    server = Server()
-    server.run_game_serve()

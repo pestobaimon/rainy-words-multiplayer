@@ -1,10 +1,10 @@
 import re
 from queue import *
-from network import *
-from player import Player
-from timer import Timer
-from words_client import Word
-from png_sprite import *
+from client.network import *
+from client.player import Player
+from server.timer import Timer
+from client.words_client import Word
+from client.png_sprite import *
 import pygame
 import random
 from pygame import mixer
@@ -67,16 +67,16 @@ class Game:
         self.msg = ''
 
         # game soundtrack
-        mixer.music.load('Assets/sound/NESNyan.mp3')
+        mixer.music.load('../Assets/sound/NESNyan.mp3')
         mixer.music.set_volume(0.05)
         mixer.music.play(-1)
 
         # game sfx
-        self.explo_sound = mixer.Sound('Assets/sound/8bitexplo.ogg')
+        self.explo_sound = mixer.Sound('../Assets/sound/8bitexplo.ogg')
         self.explo_sound.set_volume(0.5)
-        self.meow_sound = mixer.Sound('Assets/sound/meow.ogg')
+        self.meow_sound = mixer.Sound('../Assets/sound/meow.ogg')
         self.meow_sound.set_volume(0.5)
-        self.cd_sound = mixer.Sound('Assets/sound/MarioKCD.ogg')
+        self.cd_sound = mixer.Sound('../Assets/sound/MarioKCD.ogg')
         self.cd_sound.set_volume(0.1)
 
         # game ability
