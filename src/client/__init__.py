@@ -1,7 +1,7 @@
 import re
 from queue import *
 from client.network import *
-from server.player import Player
+from client.player import Player
 from server.timer import Timer
 from client.words_client import Word
 from client.png_sprite import *
@@ -24,7 +24,7 @@ class Game:
         # game interface
         self.width = 1024
         self.height = 720
-        self.font = pygame.font.Font('Assets/font/pixelmix.ttf', 32)
+        self.font = pygame.font.Font('../Assets/font/pixelmix.ttf', 32)
         self.player_bongo_me = bongo_sprite
         self.player_bongo_friend = bongo_sprite
         self.player_x_me = 50
@@ -67,16 +67,16 @@ class Game:
         self.msg = ''
 
         # game soundtrack
-        mixer.music.load('../../Assets/sound/NESNyan.mp3')
+        mixer.music.load('../Assets/sound/NESNyan.mp3')
         mixer.music.set_volume(0.05)
         mixer.music.play(-1)
 
         # game sfx
-        self.explo_sound = mixer.Sound('../../Assets/sound/8bitexplo.ogg')
+        self.explo_sound = mixer.Sound('../Assets/sound/8bitexplo.ogg')
         self.explo_sound.set_volume(0.5)
-        self.meow_sound = mixer.Sound('../../Assets/sound/meow.ogg')
+        self.meow_sound = mixer.Sound('../Assets/sound/meow.ogg')
         self.meow_sound.set_volume(0.5)
-        self.cd_sound = mixer.Sound('../../Assets/sound/MarioKCD.ogg')
+        self.cd_sound = mixer.Sound('../Assets/sound/MarioKCD.ogg')
         self.cd_sound.set_volume(0.1)
 
         # game ability
@@ -603,7 +603,7 @@ class Game:
             self.screen.blit(self.display, (0, 0))
 
     def draw_text(self, text, xpos, ypos, font_size, r, g, b):
-        font = pygame.font.Font('Assets/font/pixelart.ttf', font_size)
+        font = pygame.font.Font('../Assets/font/pixelart.ttf', font_size)
         text_show = font.render(str(text), True, (r, g, b))
         text_show_rect = text_show.get_rect()
         text_show_rect.center = (xpos, ypos)
@@ -643,7 +643,7 @@ class Game:
         self.display.blit(pygame.transform.scale(self.vfx_boom[frame], (200, 200)), (w.x_pos - 50, w.y_pos - 60))
 
     def draw_text_waiting(self, text, xpos, ypos):
-        font = pygame.font.Font("Assets/font/pixelart.ttf", 35)
+        font = pygame.font.Font("../Assets/font/pixelart.ttf", 35)
         # font = pygame.font.Font("pixelfont", 40, bold = True)
         text_a = font.render(text, True, pygame.Color(102, 0, 102))
 
@@ -688,14 +688,14 @@ class Game:
         self.display.blit(score_text, score_text_rect)
 
     def draw_connected_player_count(self, player_count):
-        font = pygame.font.Font('Assets/font/pixelmix_bold.ttf', 35)
+        font = pygame.font.Font('../Assets/font/pixelmix_bold.ttf', 35)
         text = font.render('(' + str(player_count) + '/2)', True, pygame.Color(102, 0, 102))
         text_rect = text.get_rect()
         text_rect.center = (700, 252)
         self.display.blit(text, text_rect)
 
     def draw_countdown_timer(self, time):
-        font = pygame.font.Font('Assets/font/pixelmix.ttf', 70)
+        font = pygame.font.Font('../Assets/font/pixelmix.ttf', 70)
         text = font.render(time, True, pygame.Color('black'))
         if time == '1':
             text = font.render(time + '!', True, pygame.Color('black'))
