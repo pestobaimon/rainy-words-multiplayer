@@ -14,12 +14,13 @@ from server.functions import get_opponent
 lock = threading.Lock()
 server_lock = threading.Lock()
 server_check = threading.Event()
+user_input = 0
 
 
 class Server:
     HEADER = 64
     PORT = 5050
-    SERVER = "10.204.241.226"
+    SERVER = "192.168.43.172"
     ADDR = (SERVER, PORT)
     FORMAT = 'utf-8'
     DISCONNECT_MESSAGE = "!DISCONNECT"
@@ -148,8 +149,8 @@ class Server:
         client_id = 0
         pygame.init()
         game_id = 0
-        # server_manager = threading.Thread(target=self.server_manager)
-        # server_manager.start()
+        server_manager = threading.Thread(target=self.server_manager, args=(user_input, ))
+        server_manager.start()
         while True:
 
             conn, addr = self.server.accept()
@@ -174,22 +175,33 @@ class Server:
             self.client_threads[curr_key].start()
             # server_check.set()
             # server_check.clear()
-            print(f"[ACTIVE CONNECTIONS] {threading.activeCount() - 1 - len(self.client_threads)}")
+            print(f"[ACTIVE CONNECTIONS] {len(self.client_threads)}")
 
-    def server_manager(self):
+    def server_manager(self, user_input_ref):
         while True:
-            client_thread_to_remove = []
-            server_check.wait()
-            with server_lock:
-                for key in self.client_threads:
-                    if not self.client_threads[key].is_alive():
-                        print(f"client thread {key} is DEAD")
-                        client_thread_to_remove.append(key)
-                        for client_id in self.games[int(key[0])].players:
-                            self.games[int(key[0])].players[client_id].connected = False
-                        self.games[int(key[0])].stop = True
-                for key in client_thread_to_remove:
-                    self.client_threads.pop(key)
+            user_input_ref = input("gimme \n")
+            try:
+                user_input_ref = int(user_input_ref)
+            except:
+                print(f'wrong input stupid shit. list of games {self.games.keys()}')
+            if user_input_ref in self.games:
+                with lock:
+                    self.games[user_input_ref].game_state = 1
+                    self.games[user_input_ref].reset_data()
+            else:
+                print(f'game id not found u stu stu. list of games {self.games.keys()}')
+            # client_thread_to_remove = []
+            # server_check.wait()
+            # with server_lock:
+            #     for key in self.client_threads:
+            #         if not self.client_threads[key].is_alive():
+            #             print(f"client thread {key} is DEAD")
+            #             client_thread_to_remove.append(key)
+            #             for client_id in self.games[int(key[0])].players:
+            #                 self.games[int(key[0])].players[client_id].connected = False
+            #             self.games[int(key[0])].stop = True
+            #     for key in client_thread_to_remove:
+            #         self.client_threads.pop(key)
 
 
 class Game:
