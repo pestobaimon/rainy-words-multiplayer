@@ -9,6 +9,7 @@ from server.word_library import easy_word_set, hard_word_set
 from server.words_server import Word
 from server.player import Player
 from server.functions import get_opponent
+from server.address import server_ip
 
 
 lock = threading.Lock()
@@ -20,7 +21,7 @@ user_input = 0
 class Server:
     HEADER = 64
     PORT = 5050
-    SERVER = "192.168.43.172"
+    SERVER = server_ip
     ADDR = (SERVER, PORT)
     FORMAT = 'utf-8'
     DISCONNECT_MESSAGE = "!DISCONNECT"

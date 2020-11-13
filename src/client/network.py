@@ -1,11 +1,11 @@
 import socket
-
+from server.address import server_ip
 
 class Network:
 
     def __init__(self):
         self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.host = "192.168.43.172"
+        self.host = server_ip
         self.port = 5050
         self.addr = (self.host, self.port)
         self.game_id, self.id = self.connect()
