@@ -38,26 +38,26 @@ class Server:
     Stage 0:
     client data format
       [game_id, client_id, client_game_state, name]
-    server data format
+    src data format
       [game_id, game_state, lobby_count]
 
     Stage 1:
     client data format:
     --
-    server data format:
+    src data format:
     [game_id, game_state, countdown, opponent_name]
 
     Stage 2: 
     client data format: 
     [game_id, client_id, client_game_state, word_submit, action_index] 
-    server data format: 
+    src data format: 
     [game_id, game_state, opponent_action_index, ability, debuff, time_seconds : client_id, score | client_id,score : word_id,
     word_code,fall_speed,x_pos,y_pos | word_id,word_code,fall_speed,x_pos,y_pos | , ....] 
 
     Stage 3:
     client data format:
         [game_id, client_id, client_game_state, play_again] 1 play again 0 not
-    server data format:
+    src data format:
         [game_id, game_state, : client_id, score, play_again | client_id, score, play_again]
     
     Restart Message:

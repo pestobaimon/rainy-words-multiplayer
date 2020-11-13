@@ -31,7 +31,7 @@ class Game:
         self.player_y_me = 420
         self.player_x_friend = 670
         self.player_y_friend = 420
-        # display client -> server
+        # display client -> src
         self.draw_state_me = 0
         self.draw_state_friend = 0
 
@@ -67,16 +67,16 @@ class Game:
         self.msg = ''
 
         # game soundtrack
-        mixer.music.load('../Assets/sound/NESNyan.mp3')
+        mixer.music.load('../../Assets/sound/NESNyan.mp3')
         mixer.music.set_volume(0.05)
         mixer.music.play(-1)
 
         # game sfx
-        self.explo_sound = mixer.Sound('../Assets/sound/8bitexplo.ogg')
+        self.explo_sound = mixer.Sound('../../Assets/sound/8bitexplo.ogg')
         self.explo_sound.set_volume(0.5)
-        self.meow_sound = mixer.Sound('../Assets/sound/meow.ogg')
+        self.meow_sound = mixer.Sound('../../Assets/sound/meow.ogg')
         self.meow_sound.set_volume(0.5)
-        self.cd_sound = mixer.Sound('../Assets/sound/MarioKCD.ogg')
+        self.cd_sound = mixer.Sound('../../Assets/sound/MarioKCD.ogg')
         self.cd_sound.set_volume(0.1)
 
         # game ability
@@ -523,26 +523,26 @@ class Game:
     Stage 0:
     client data format
       [game_id, client_id, client_game_state, name]
-    server data format
+    src data format
       [game_id, game_state, lobby_count]
 
     Stage 1:
     client data format:
         --
-    server data format:
+    src data format:
         [game_id, game_state, countdown, opponent_name]
 
     Stage 2: 
     client data format: 
         [game_id, client_id, client_game_state, word_submit, action_index] 
-    server data format: 
+    src data format: 
         [game_id, game_state, opponent_action_index, time_seconds : client_id, score | client_id,score : word_id,
         word_code,fall_speed,x_pos,y_pos | word_id,word_code,fall_speed,x_pos,y_pos | , ....] 
 
     Stage 3:
     client data format:
         [game_id, client_id, client_game_state, play_again] 1 play again 0 not
-    server data format:
+    src data format:
         [game_id, game_state, : client_id, score, play_again | client_id, score, play_again]
 
     Restart Message:
