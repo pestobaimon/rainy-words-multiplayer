@@ -19,7 +19,7 @@ server_check = threading.Event()
 class Server:
     HEADER = 64
     PORT = 5050
-    SERVER = "10.204.241.226"
+    SERVER = "192.168.1.42"
     ADDR = (SERVER, PORT)
     FORMAT = 'utf-8'
     DISCONNECT_MESSAGE = "!DISCONNECT"
@@ -89,56 +89,56 @@ class Server:
                 conn.sendall(str.encode("Token not authorized. Disconnecting"))
                 print(f'disconnected from {addr} ')
                 break
-            with lock:
+            # with lock:
                 # print(f'client thread {str(client_id)} got a lock')
-                if current_game.game_state == 0:
-                    if rcv_game_state == current_game.game_state:
-                        name = str(client_data_arr[3])
-                        if name != "" or " ":
-                            current_game.players[client_id].ready = True
-                        current_game.sync_data([client_id, name])
-                    msg = str(game_id) + "," + str(current_game.game_state) + "," + str(len(current_game.players))
-                    # print(msg)
-                    # print("msg_0", msg)
-                    conn.sendall(str.encode(msg))
-                elif current_game.game_state == 1:
-                    msg = str(game_id) + "," + str(current_game.game_state) + "," + current_game.countdown + "," + \
-                          current_game.players[
-                              get_opponent(client_id)].name
-                    # print("msg_1", msg)
-                    conn.sendall(str.encode(msg))
-                elif current_game.game_state == 2:
-                    if rcv_game_state == current_game.game_state:
-                        word_submit = str(client_data_arr[3])
-                        action_index = int(client_data_arr[4])
-                        recv_q.put([client_id, word_submit, action_index])
-                    msg = str(game_id) + "," + str(current_game.game_state) + "," \
-                          + str(current_game.players[get_opponent(client_id)].action_index) \
-                          + "," + str(current_game.players[client_id].ability) + "," \
-                          + str(current_game.players[client_id].debuff) + "," \
-                          + str(current_game.time) + ":" + current_game.frame_string
-                    current_game.players[client_id].ability = 0
-                    current_game.players[client_id].debuff = 0
-                    # print('msg_2', msg)
-                    conn.sendall(str.encode(msg))
-                elif current_game.game_state == 3:
-                    if rcv_game_state == current_game.game_state:
-                        # print('END')
-                        play_again = True if int(client_data_arr[3]) == 1 else False
-                        recv_q.put([client_id, play_again])
-                    if current_game.play_again:
-                        msg = str(game_id) + "," + "restart" + ":"
-                        for key in current_game.players:
-                            msg += str(key) + "," + str(current_game.players[key].score) + "," + str(
-                                1 if current_game.players[key].play_again else 0) + "|"
-                        msg = msg[:-1]
-                    else:
-                        msg = str(game_id) + "," + str(current_game.game_state) + ":"
-                        for key in current_game.players:
-                            msg += str(key) + "," + str(current_game.players[key].score) + "," + str(
-                                1 if current_game.players[key].play_again else 0) + "|"
-                        msg = msg[:-1]
-                    conn.sendall(str.encode(msg))
+            if current_game.game_state == 0:
+                if rcv_game_state == current_game.game_state:
+                    name = str(client_data_arr[3])
+                    if name != "" or " ":
+                        current_game.players[client_id].ready = True
+                    current_game.sync_data([client_id, name])
+                msg = str(game_id) + "," + str(current_game.game_state) + "," + str(len(current_game.players))
+                # print(msg)
+                # print("msg_0", msg)
+                conn.sendall(str.encode(msg))
+            elif current_game.game_state == 1:
+                msg = str(game_id) + "," + str(current_game.game_state) + "," + current_game.countdown + "," + \
+                      current_game.players[
+                          get_opponent(client_id)].name
+                # print("msg_1", msg)
+                conn.sendall(str.encode(msg))
+            elif current_game.game_state == 2:
+                if rcv_game_state == current_game.game_state:
+                    word_submit = str(client_data_arr[3])
+                    action_index = int(client_data_arr[4])
+                    recv_q.put([client_id, word_submit, action_index])
+                msg = str(game_id) + "," + str(current_game.game_state) + "," \
+                      + str(current_game.players[get_opponent(client_id)].action_index) \
+                      + "," + str(current_game.players[client_id].ability) + "," \
+                      + str(current_game.players[client_id].debuff) + "," \
+                      + str(current_game.time) + ":" + current_game.frame_string
+                current_game.players[client_id].ability = 0
+                current_game.players[client_id].debuff = 0
+                # print('msg_2', msg)
+                conn.sendall(str.encode(msg))
+            elif current_game.game_state == 3:
+                if rcv_game_state == current_game.game_state:
+                    # print('END')
+                    play_again = True if int(client_data_arr[3]) == 1 else False
+                    recv_q.put([client_id, play_again])
+                if current_game.play_again:
+                    msg = str(game_id) + "," + "restart" + ":"
+                    for key in current_game.players:
+                        msg += str(key) + "," + str(current_game.players[key].score) + "," + str(
+                            1 if current_game.players[key].play_again else 0) + "|"
+                    msg = msg[:-1]
+                else:
+                    msg = str(game_id) + "," + str(current_game.game_state) + ":"
+                    for key in current_game.players:
+                        msg += str(key) + "," + str(current_game.players[key].score) + "," + str(
+                            1 if current_game.players[key].play_again else 0) + "|"
+                    msg = msg[:-1]
+                conn.sendall(str.encode(msg))
             # print(f'client thread {str(client_id)} released a lock')
         conn.sendall(str.encode("DISCONNECT"))
 
